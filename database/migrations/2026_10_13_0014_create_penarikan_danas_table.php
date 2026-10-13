@@ -12,15 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('penarikan_danas', function (Blueprint $table) {
-        $table->string('id')->primary();
-        $table->string('tenant_id'); // Foreign key ke tenants
-        $table->decimal('nominal', 12, 2);
-        $table->string('status')->default('Pending'); // Pending, Terverifikasi
-        $table->dateTime('waktu_pengajuan');
-        $table->timestamps();
+            $table->string('id')->primary();
+            $table->string('tenant_id'); // Foreign key ke tenants
+            $table->decimal('nominal', 12, 2);
+            $table->string('status')->default('Pending'); // Pending, Terverifikasi
+            $table->dateTime('waktu_pengajuan');
+            $table->timestamps();
 
-        $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
-    });
+            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+        });
     }
 
     /**

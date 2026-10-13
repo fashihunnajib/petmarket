@@ -10,11 +10,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Pesanan extends Model
 {
     protected $table = 'pesanans';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
-        'id', 'pelanggan_id', 'tenant_id', 'status_pesanan', 'total_belanja'
+        'id', 'pelanggan_id', 'tenant_id', 'status_pesanan', 'total_belanja',
     ];
 
     public function pelanggan(): BelongsTo

@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('keranjangs', function (Blueprint $table) {
-        $table->string('id')->primary();
-        $table->string('pelanggan_id'); // Foreign key ke pelanggans
-        $table->timestamps();
+        Schema::create('keranjangs', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('pelanggan_id'); // Foreign key ke pelanggans
+            $table->timestamps();
 
-        $table->foreign('pelanggan_id')->references('id')->on('pelanggans')->onDelete('cascade');
-    });
+            $table->foreign('pelanggan_id')->references('id')->on('pelanggans')->onDelete('cascade');
+        });
     }
 
     /**

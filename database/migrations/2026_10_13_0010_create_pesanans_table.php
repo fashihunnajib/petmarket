@@ -10,19 +10,19 @@ return new class extends Migration
     {
         Schema::create('pesanans', function (Blueprint $table) {
             $table->string('id')->primary();
-            
+
             // Tambahkan ->index() secara eksplisit sebelum foreign key
             $table->string('pelanggan_id')->index();
             $table->string('tenant_id')->index();
-            
+
             $table->enum('status_pesanan', [
-                'Menunggu Pembayaran', 
-                'Pesanan Baru', 
-                'Diproses', 
-                'Dalam Perjalanan', 
-                'Selesai'
+                'Menunggu Pembayaran',
+                'Pesanan Baru',
+                'Diproses',
+                'Dalam Perjalanan',
+                'Selesai',
             ])->default('Menunggu Pembayaran');
-            
+
             $table->decimal('total_belanja');
             $table->timestamps();
 

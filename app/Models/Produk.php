@@ -4,17 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Produk extends Model
 {
     protected $table = 'produks';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
-        'id', 'tenant_id', 'nama_produk', 'slug', 'tipe', 'harga', 'stok'
+        'id', 'tenant_id', 'nama_produk', 'slug', 'tipe', 'harga', 'stok',
     ];
 
     public function tenant(): BelongsTo

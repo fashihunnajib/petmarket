@@ -12,14 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('pengirimans', function (Blueprint $table) {
-        $table->string('id')->primary();
-        $table->string('pesanan_id');
-        $table->string('tipe_kurir'); // Contoh: Kurir Toko/Ketemuan atau Reguler
-        $table->string('status_pengiriman')->default('Menunggu');
-        $table->timestamps();
+            $table->string('id')->primary();
+            $table->string('pesanan_id');
+            $table->string('tipe_kurir'); // Contoh: Kurir Toko/Ketemuan atau Reguler
+            $table->string('status_pengiriman')->default('Menunggu');
+            $table->timestamps();
 
-        $table->foreign('pesanan_id')->references('id')->on('pesanans')->onDelete('cascade');
-    });
+            $table->foreign('pesanan_id')->references('id')->on('pesanans')->onDelete('cascade');
+        });
     }
 
     /**

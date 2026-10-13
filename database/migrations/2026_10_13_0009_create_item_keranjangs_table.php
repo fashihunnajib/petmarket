@@ -11,16 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('item_keranjangs', function (Blueprint $table) {
-        $table->string('id')->primary();
-        $table->string('keranjang_id'); // Foreign key ke keranjangs
-        $table->string('produk_id');     // Foreign key ke produks
-        $table->integer('kuantitas');
-        $table->timestamps();
+        Schema::create('item_keranjangs', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('keranjang_id'); // Foreign key ke keranjangs
+            $table->string('produk_id');     // Foreign key ke produks
+            $table->integer('kuantitas');
+            $table->timestamps();
 
-        $table->foreign('keranjang_id')->references('id')->on('keranjangs')->onDelete('cascade');
-        $table->foreign('produk_id')->references('id')->on('produks')->onDelete('cascade');
-    });
+            $table->foreign('keranjang_id')->references('id')->on('keranjangs')->onDelete('cascade');
+            $table->foreign('produk_id')->references('id')->on('produks')->onDelete('cascade');
+        });
     }
 
     /**

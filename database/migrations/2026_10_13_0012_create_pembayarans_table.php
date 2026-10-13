@@ -12,17 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('pembayarans', function (Blueprint $table) {
-        $table->string('id')->primary();
-        $table->string('pesanan_id');
-        $table->string('qris_id')->nullable();
-        $table->decimal('total_bayar', 12, 2);
-        $table->decimal('pendapatan_tenant', 12, 2);
-        $table->decimal('komisi_platform', 12, 2);
-        $table->string('status_pembayaran')->default('Pending');
-        $table->timestamps();
+            $table->string('id')->primary();
+            $table->string('pesanan_id');
+            $table->string('qris_id')->nullable();
+            $table->decimal('total_bayar', 12, 2);
+            $table->decimal('pendapatan_tenant', 12, 2);
+            $table->decimal('komisi_platform', 12, 2);
+            $table->string('status_pembayaran')->default('Pending');
+            $table->timestamps();
 
-        $table->foreign('pesanan_id')->references('id')->on('pesanans')->onDelete('cascade');
-    });
+            $table->foreign('pesanan_id')->references('id')->on('pesanans')->onDelete('cascade');
+        });
     }
 
     /**
