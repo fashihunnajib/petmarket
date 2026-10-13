@@ -7,7 +7,7 @@
 <body class="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
     <div class="flex min-h-screen flex-col">
         <header class="flex min-h-14 items-center gap-3 border-b border-zinc-200 bg-white px-6 dark:border-zinc-800 dark:bg-zinc-900">
-            <span class="text-lg font-semibold">Pengelola Kantin</span>
+            <span class="text-lg font-semibold">Pengelola Toko</span>
             <span class="ms-2 text-sm text-zinc-500">/ {{ $title }}</span>
             @isset($headerRight)<div class="ms-auto">{{ $headerRight }}</div>@endisset
         </header>
