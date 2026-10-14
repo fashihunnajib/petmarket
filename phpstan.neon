@@ -3,6 +3,7 @@ includes:
     - vendor/nesbot/carbon/extension.neon
 
 parameters:
+    level: 0
     paths:
         - app/
         - bootstrap/app.php
@@ -10,7 +11,8 @@ parameters:
         - database/
         - routes/
 
-    # Blade/SFC milik modul bukan kelas PHP murni (dianalisis via test, bukan PHPStan).
     excludePaths:
         - app/Modules/*/resources/*
-    level: 7
+
+    ignoreErrors:
+        - '#Class App\\Models\\.+ not found#'

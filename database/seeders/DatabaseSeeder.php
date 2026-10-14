@@ -2,39 +2,34 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\Pengguna;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
     /**
-     * Data demo deterministik. Password demo bersifat lokal (bukan secret produksi).
+     * Data demo deterministik untuk project PetMarket.
      */
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-
-        // Akun demo per konteks (Modul 2). Role diformalkan pada Modul 4–5.
+        // Daftar akun demo sesuai modul PetMarket
         $demo = [
-            ['name' => 'Admin PetMarket', 'email' => 'admin@petmarket.test', 'role' => 'admin'],
-            ['name' => 'Operator Tenant', 'email' => 'tenant@petmarket.test', 'role' => 'tenant'],
+            ['nama' => 'Admin PetMarket', 'email' => 'admin@petmarket.test', 'role' => 'SuperAdmin'],
+            ['nama' => 'Operator Tenant', 'email' => 'tenant@petmarket.test', 'role' => 'Tenant'],
+            ['nama' => 'Pelanggan Demo', 'email' => 'pelanggan@petmarket.test', 'role' => 'Pelanggan'],
         ];
 
         foreach ($demo as $row) {
-            // forceFill: role/status sengaja tidak mass-assignable; forceFill melewati
-            // proteksi fillable dan menghindari asignmen properti bertipe langsung.
-            User::firstOrNew(['email' => $row['email']])
+            Pengguna::firstOrNew(['email' => $row['email']])
                 ->forceFill([
-                    'name' => $row['name'],
-                    'role' => $row['role'],
-                    'status' => 'active',
+                    'id' => (string) Str::uuid(), // Wajib ada karena ID kita string/UUID
+                    'nama' => $row['nama'],          // Sesuai nama kolom di migration
+                    'role' => $row['role'],          // Sesuai pilihan enum di migration
                     'password' => Hash::make('password'),
                     'email_verified_at' => now(),
                 ])
