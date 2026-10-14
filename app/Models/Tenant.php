@@ -37,4 +37,9 @@ class Tenant extends Model
     {
         return $this->hasMany(PenarikanDana::class, 'tenant_id');
     }
+
+    public function rekeningBanks()
+    {
+        return $this->hasMany(rekeningBanks::class);
+    }
 }
