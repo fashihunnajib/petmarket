@@ -23,8 +23,8 @@ class DatabaseSeeder extends Seeder
 
         // Akun demo per konteks (Modul 2). Role diformalkan pada Modul 4–5.
         $demo = [
-            ['name' => 'Admin PetMarket', 'email' => 'admin@petmarket.test', 'role' => 'admin'],
-            ['name' => 'Operator Tenant', 'email' => 'tenant@petmarket.test', 'role' => 'tenant'],
+            ['name' => 'Admin PetMarket', 'email' => 'admin@petmarket.test', 'role' => 'admin', 'address' => null, 'phone_e164' => '+6281234567890', 'latitude' => null, 'longitude' => null],
+            ['name' => 'Operator Tenant', 'email' => 'tenant@petmarket.test', 'role' => 'tenant', 'address' => 'Jl. Raya Tenant No. 1', 'phone_e164' => '+6281234567891', 'latitude' => -6.900000, 'longitude' => 107.600000],
         ];
 
         foreach ($demo as $row) {
@@ -34,11 +34,17 @@ class DatabaseSeeder extends Seeder
                 ->forceFill([
                     'name' => $row['name'],
                     'role' => $row['role'],
+                    'address'=> $row['address'],
+                    'phone_e164' => $row['phone_e164'],
+                    'latitude' => $row['latitude'],
+                    'longitude' => $row['longitude'],
                     'status' => 'active',
                     'password' => Hash::make('password'),
                     'email_verified_at' => now(),
                 ])
                 ->save();
         }
+
+        $this->call(DemoShopSeeder::class);
     }
 }
