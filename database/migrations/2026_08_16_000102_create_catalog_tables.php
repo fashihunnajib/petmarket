@@ -81,7 +81,7 @@ return new class extends Migration
 
             // Composite FK ke tabel products untuk memastikan isolasi tenant
             $table->foreign(['tenant_id', 'product_id'])
-                  ->references(['tenant_id', 'id'])->on('products')->cascadeOnDelete();
+                ->references(['tenant_id', 'id'])->on('products')->cascadeOnDelete();
         });
 
         Schema::create('product_goods', function (Blueprint $table): void {
@@ -94,7 +94,7 @@ return new class extends Migration
 
             // Composite FK ke tabel products
             $table->foreign(['tenant_id', 'product_id'])
-                  ->references(['tenant_id', 'id'])->on('products')->cascadeOnDelete();
+                ->references(['tenant_id', 'id'])->on('products')->cascadeOnDelete();
         });
     }
 

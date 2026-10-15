@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\ProductAnimal;
 use App\Models\Product;
+use App\Models\ProductAnimal;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /** @extends Factory<ProductAnimal> */

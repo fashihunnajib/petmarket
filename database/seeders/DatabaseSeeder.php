@@ -34,7 +34,7 @@ class DatabaseSeeder extends Seeder
                 ->forceFill([
                     'name' => $row['name'],
                     'role' => $row['role'],
-                    'address'=> $row['address'],
+                    'address' => $row['address'],
                     'phone_e164' => $row['phone_e164'],
                     'latitude' => $row['latitude'],
                     'longitude' => $row['longitude'],

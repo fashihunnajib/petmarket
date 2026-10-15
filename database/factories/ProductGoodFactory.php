@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\ProductGood;
 use App\Models\Product;
+use App\Models\ProductGood;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /** @extends Factory<ProductGood> */

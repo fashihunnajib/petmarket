@@ -13,6 +13,7 @@ class ProductAnimal extends Model
     use HasFactory;
 
     protected $primaryKey = 'product_id';
+
     public $incrementing = false;
 
     protected $fillable = ['product_id', 'tenant_id', 'breed', 'age_months', 'gender', 'vaccination_status', 'weight_kg', 'health_history'];

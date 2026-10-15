@@ -26,7 +26,7 @@ class TenantFactory extends Factory
         ];
     }
 
-        public function suspended(): static
+    public function suspended(): static
     {
         return $this->state(['status' => 'suspended']);
     }

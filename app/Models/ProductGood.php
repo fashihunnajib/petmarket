@@ -13,6 +13,7 @@ class ProductGood extends Model
     use HasFactory;
 
     protected $primaryKey = 'product_id';
+
     public $incrementing = false;
 
     protected $fillable = ['product_id', 'tenant_id', 'weight_gram', 'dimension_cm', 'expired_date'];
