@@ -36,13 +36,13 @@ class Product extends Model
         return $this->belongsTo(ProductCategory::class, 'category_id');
     }
 
-    /** @return HasOne<ProductAnimal> */
+    /** @return HasOne<ProductAnimal, $this> */
     public function animalDetail(): HasOne
     {
         return $this->hasOne(ProductAnimal::class, 'product_id');
     }
 
-    /** @return HasOne<ProductGood> */
+    /** @return HasOne<ProductGood, $this> */
     public function goodDetail(): HasOne
     {
         return $this->hasOne(ProductGood::class, 'product_id');

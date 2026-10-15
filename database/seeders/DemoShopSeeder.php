@@ -271,7 +271,7 @@ class DemoShopSeeder extends Seeder
 
         // Operator demo -> tenant DEMO (peran operator).
         $operator = User::where('email', 'tenant@petmarket.test')->first();
-        if ($operator !== null && isset($tenants['DEMO'])) {
+        if ($operator !== null) {
             UserTenantRole::firstOrCreate([
                 'user_id' => $operator->id,
                 'tenant_id' => $tenants['DEMO']->id,

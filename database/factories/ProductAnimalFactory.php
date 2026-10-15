@@ -12,9 +12,9 @@ class ProductAnimalFactory extends Factory
     public function definition(): array
     {
         return [
-            'product_id' => Product::factory(['type' => 'animal']),
-            // Ambil tenant_id dari objek Product yang berelasi untuk menjaga integritas Composite FK
-            'tenant_id' => fn (array $attributes) => Product::find($attributes['product_id'])?->tenant_id,
+            'product_id' => Product::factory(),
+            'tenant_id' => fn (array $attributes) => Product::query()
+                ->where('id', $attributes['product_id'])->value('tenant_id'),
             'breed' => fake()->word(),
             'age_months' => fake()->numberBetween(1, 24),
             'gender' => fake()->randomElement(['male', 'female']),
