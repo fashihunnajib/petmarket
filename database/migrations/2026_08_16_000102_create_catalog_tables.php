@@ -69,8 +69,8 @@ return new class extends Migration
         });
 
         Schema::create('product_animals', function (Blueprint $table): void {
-            $table->unsignedBigInteger('product_id')->primary();
-            $table->foreignId('tenant_id');
+            $table->unsignedBigInteger('product_id');
+            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->string('breed', 100);
             $table->unsignedInteger('age_months');
             $table->enum('gender', ['male', 'female']);
@@ -79,18 +79,24 @@ return new class extends Migration
             $table->text('health_history')->nullable();
             $table->timestamps(6);
 
+            // Tentukan primary key gabungan agar menjamin 1:1 per tenant & per produk
+            $table->primary(['tenant_id', 'product_id']);
+
             // Composite FK ke tabel products untuk memastikan isolasi tenant
             $table->foreign(['tenant_id', 'product_id'])
                 ->references(['tenant_id', 'id'])->on('products')->cascadeOnDelete();
         });
 
         Schema::create('product_goods', function (Blueprint $table): void {
-            $table->unsignedBigInteger('product_id')->primary();
-            $table->foreignId('tenant_id');
+            $table->unsignedBigInteger('product_id');
+            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->unsignedMediumInteger('weight_gram'); // Wajib untuk hitung ongkir ekspedisi
             $table->string('dimension_cm', 50)->nullable(); // Format: PxLxT
             $table->date('expired_date')->nullable();
             $table->timestamps(6);
+
+            // Tentukan primary key gabungan agar menjamin 1:1 per tenant & per produk
+            $table->primary(['tenant_id', 'product_id']);
 
             // Composite FK ke tabel products
             $table->foreign(['tenant_id', 'product_id'])
