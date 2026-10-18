@@ -39,12 +39,12 @@ class Product extends Model
     /** @return HasOne<ProductAnimal, $this> */
     public function animalDetail(): HasOne
     {
-        return $this->hasOne(ProductAnimal::class, 'product_id', 'id');
+        return $this->hasOne(ProductAnimal::class, 'product_id');
     }
 
     /** @return HasOne<ProductGood, $this> */
     public function goodDetail(): HasOne
     {
-        return $this->hasOne(ProductGood::class, 'product_id', 'id');
+        return $this->hasOne(ProductGood::class, 'product_id');
     }
 }
