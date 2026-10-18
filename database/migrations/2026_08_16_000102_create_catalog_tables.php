@@ -69,18 +69,18 @@ return new class extends Migration
         });
 
         Schema::create('product_animals', function (Blueprint $table): void {
-            $table->unsignedBigInteger('product_id');
+            $table->unsignedBigInteger('product_id')->primary(); // Menjamin Relasi 1:1 murni
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->string('breed', 100);
             $table->unsignedInteger('age_months');
             $table->enum('gender', ['male', 'female']);
             $table->string('vaccination_status', 50); // mis. "vaccinated", "not vaccinated" wajib.
-            $table->string('weight_kg', 20)->nullable(); // opsional, untuk hewan peliharaan
+            $table->decimal('weight_kg', 6, 2)->nullable(); // opsional, untuk hewan peliharaan
             $table->text('health_history')->nullable();
             $table->timestamps(6);
 
             // Tentukan primary key gabungan agar menjamin 1:1 per tenant & per produk
-            $table->primary(['tenant_id', 'product_id']);
+            $table->unique(['tenant_id', 'product_id']);
 
             // Composite FK ke tabel products untuk memastikan isolasi tenant
             $table->foreign(['tenant_id', 'product_id'])
@@ -88,15 +88,15 @@ return new class extends Migration
         });
 
         Schema::create('product_goods', function (Blueprint $table): void {
-            $table->unsignedBigInteger('product_id');
+            $table->unsignedBigInteger('product_id')->primary(); // Menjamin Relasi 1:1 murni
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-            $table->unsignedMediumInteger('weight_gram'); // Wajib untuk hitung ongkir ekspedisi
+            $table->unsignedInteger('weight_gram'); // Wajib untuk hitung ongkir ekspedisi
             $table->string('dimension_cm', 50)->nullable(); // Format: PxLxT
             $table->date('expired_date')->nullable();
             $table->timestamps(6);
 
             // Tentukan primary key gabungan agar menjamin 1:1 per tenant & per produk
-            $table->primary(['tenant_id', 'product_id']);
+            $table->unique(['tenant_id', 'product_id']);
 
             // Composite FK ke tabel products
             $table->foreign(['tenant_id', 'product_id'])
