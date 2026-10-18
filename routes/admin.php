@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Admin\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -8,6 +9,5 @@ use Illuminate\Support\Facades\Route;
  * route fitur ditambahkan oleh modul di app/Modules/{Modul}/routes/admin.php.
  * Administrasi tenant/role/komisi diisi Modul 5.
  */
-Route::get('/dashboard', function () {
-    return view('admin.dashboard');
-})->name('dashboard');
+Route::get('/dashboard', DashboardController::class)
+    ->name('dashboard');
