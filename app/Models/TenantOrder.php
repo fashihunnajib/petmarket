@@ -46,6 +46,6 @@ class TenantOrder extends Model
     /** @return HasOne<OrderDelivery, $this> */
     public function delivery(): HasOne
     {
-        return $this->hasOne(OrderDelivery::class);
+        return $this->hasOne(OrderDelivery::class, 'tenant_order_id');
     }
 }

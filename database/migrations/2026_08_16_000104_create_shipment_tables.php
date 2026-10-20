@@ -15,8 +15,8 @@ return new class extends Migration
     {
         Schema::create('order_deliveries', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->restrictOnDelete();
             $table->unsignedBigInteger('tenant_order_id');
+            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
 
             // Opsi Kurir: Kurir Toko/Ketemuan (Khusus Hewan) vs Ekspedisi Reguler (Barang Fisik)
             $table->enum('delivery_type', ['seller_courier_meetup', 'regular_expedition']);
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->text('notes')->nullable(); // Catatan titik temu / petunjuk pengiriman
             $table->timestamps(6);
 
-            $table->unique(['tenant_order_id']); // Relasi 1:1 dengan tenant_orders
+            $table->unique(['tenant_id', 'tenant_order_id']); // Relasi 1:1 dengan tenant_orders
             $table->foreign(['tenant_id', 'tenant_order_id'])
                 ->references(['tenant_id', 'id'])->on('tenant_orders')->cascadeOnDelete();
         });
