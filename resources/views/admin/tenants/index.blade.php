@@ -1,11 +1,23 @@
 <x-layouts.admin title="Manajemen Tenant">
     <div class="space-y-6">
-        <div>
-            <h1 class="text-2xl font-bold">Manajemen Tenant</h1>
-            <p class="mt-1 text-sm text-zinc-500">
-                Kelola dan pantau toko yang terdaftar di PetMarket.
-            </p>
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold">Manajemen Tenant</h1>
+                <p class="mt-1 text-sm text-zinc-500">
+                    Kelola dan pantau toko yang terdaftar di PetMarket.
+                </p>
+            </div>
+            <a href="{{ route('admin.tenants.create') }}" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
+                + Tambah Tenant
+            </a>
         </div>
+
+        <!-- Alert Notifikasi Berhasil (Poin 1) -->
+        @if (session('status'))
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                {{ session('status') }}
+            </div>
+        @endif
 
         <div class="grid gap-4 sm:grid-cols-3">
             <div class="rounded-xl border bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
@@ -25,8 +37,7 @@
         </div>
 
         <div class="rounded-xl border bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-            <form method="GET" action="{{ route('admin.tenants.index') }}"
-                  class="mb-5 flex flex-wrap gap-3">
+            <form method="GET" action="{{ route('admin.tenants.index') }}" class="mb-5 flex flex-wrap gap-3">
                 <input
                     type="text"
                     name="search"
@@ -47,6 +58,7 @@
                             <th class="px-3 py-3">Nama Tenant</th>
                             <th class="px-3 py-3">Slug</th>
                             <th class="px-3 py-3">Status</th>
+                            <th class="px-3 py-3">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y dark:divide-zinc-800">
@@ -56,25 +68,58 @@
                                 <td class="px-3 py-4 font-medium">{{ $tenant->name }}</td>
                                 <td class="px-3 py-4">{{ $tenant->slug }}</td>
                                 <td class="px-3 py-4">
-                                    @php
-                                        $statusClass = match ($tenant->status) {
-                                            'active' => 'bg-emerald-100 text-emerald-700',
-                                            'pending' => 'bg-amber-100 text-amber-700',
-                                            'suspended' => 'bg-red-100 text-red-700',
-                                            default => 'bg-zinc-100 text-zinc-700',
-                                        };
-                                    @endphp
-                                    <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $statusClass }}">
-                                        {{ ucfirst($tenant->status) }}
-                                    </span>
+                                    @if ($tenant->status === 'pending')
+                                        <div class="flex items-center gap-1.5">
+                                            <form method="POST" action="{{ route('admin.tenants.status', $tenant) }}">
+                                                @csrf
+                                                <input type="hidden" name="status" value="active">
+                                                <button type="submit" class="rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-700">
+                                                    Setujui
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ route('admin.tenants.status', $tenant) }}">
+                                                @csrf
+                                                <input type="hidden" name="status" value="suspended">
+                                                <button type="submit" class="rounded-lg bg-red-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-red-700">
+                                                    Tolak
+                                                </button>
+                                            </form>
+                                        </div>
+                                    @else
+                                        @php
+                                            $statusClass = match ($tenant->status) {
+                                                'active' => 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
+                                                'suspended' => 'bg-red-100 text-red-700 hover:bg-red-200',
+                                                default => 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200',
+                                            };
+                                            $nextStatus = $tenant->status === 'active' ? 'suspended' : 'active';
+                                        @endphp
+                                        <form method="POST" action="{{ route('admin.tenants.status', $tenant) }}">
+                                            @csrf
+                                            <input type="hidden" name="status" value="{{ $nextStatus }}">
+                                            <button type="submit" class="rounded-full px-3 py-1 text-xs font-semibold transition-colors {{ $statusClass }}">
+                                                {{ ucfirst($tenant->status) }}
+                                            </button>
+                                        </form>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-4">
+                                    <form action="{{ route('admin.tenants.destroy', $tenant) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus tenant {{ $tenant->name }}?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-100 dark:bg-red-950 dark:text-red-400">
+                                            Hapus
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="px-3 py-8 text-center text-zinc-500">
+                                <td colspan="5" class="px-3 py-8 text-center text-zinc-500">
                                     Belum ada tenant yang cocok.
                                 </td>
                             </tr>
+                        
                         @endforelse
                     </tbody>
                 </table>
@@ -85,4 +130,4 @@
             </div>
         </div>
     </div>
-</x-layouts.admin>php artisan optimize:clear
+</x-layouts.admin>
