@@ -8,7 +8,7 @@ PortalRoutes::admin(function (): void {
     Route::get('/tenants', [TenantController::class, 'index'])->name('tenants.index');
     Route::get('/tenants/create', [TenantController::class, 'create'])->name('tenants.create');
     Route::post('/tenants', [TenantController::class, 'store'])->name('tenants.store');
-    
+
     // [BARU] Rute untuk fitur Edit
     Route::get('/tenants/{tenant}/edit', [TenantController::class, 'edit'])->name('tenants.edit');
     Route::put('/tenants/{tenant}', [TenantController::class, 'update'])->name('tenants.update');
