@@ -16,7 +16,7 @@ class WithdrawalController extends Controller
      */
     public function index(Request $request): View
     {
-        $status = $request->query('status', 'all');
+        $status = (string) $request->query('status', 'all');
 
         $withdrawals = Withdrawal::with(['tenant', 'bankAccount'])
             ->when($status !== 'all', function ($query) use ($status) {
@@ -60,7 +60,7 @@ class WithdrawalController extends Controller
             if ($balance) {
                 DB::table('tenant_balances')
                     ->where('tenant_id', $withdrawal->tenant_id)
-                    ->decrement('held_amount', $withdrawal->amount);
+                    ->decrement('held_amount', (int) $withdrawal->amount); 
             }
         });
 
@@ -97,11 +97,11 @@ class WithdrawalController extends Controller
             if ($balance) {
                 DB::table('tenant_balances')
                     ->where('tenant_id', $withdrawal->tenant_id)
-                    ->increment('available_amount', $withdrawal->amount);
+                    ->increment('available_amount', (int) $withdrawal->amount); 
 
                 DB::table('tenant_balances')
                     ->where('tenant_id', $withdrawal->tenant_id)
-                    ->decrement('held_amount', $withdrawal->amount);
+                    ->decrement('held_amount', (int) $withdrawal->amount); 
             }
         });
 

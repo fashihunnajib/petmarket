@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Withdrawal extends Model
 {
+    /** @use HasFactory<\Database\Factories\WithdrawalFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -25,11 +26,17 @@ class Withdrawal extends Model
         'processed_at' => 'datetime',
     ];
 
+    /**
+     * @return BelongsTo<Tenant, $this>
+     */
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class, 'tenant_id');
     }
 
+    /**
+     * @return BelongsTo<TenantBankAccount, $this>
+     */
     public function bankAccount(): BelongsTo
     {
         return $this->belongsTo(TenantBankAccount::class, 'tenant_bank_account_id');
