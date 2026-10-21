@@ -37,7 +37,15 @@ class TenantOrder extends Model
         return $this->belongsTo(Tenant::class);
     }
 
-    /** @return HasMany<OrderItem, $this> */
+    /** @return BelongsTo<Order, $this> */
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * @return HasMany<OrderItem, $this>
+     */
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
