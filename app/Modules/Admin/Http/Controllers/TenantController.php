@@ -2,116 +2,144 @@
 
 namespace App\Modules\Admin\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Models\Tenant;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
-class TenantController
+class TenantController extends Controller
 {
+    /**
+     * Menampilkan daftar tenant beserta fitur pencarian dan kalkulasi ringkasan.
+     */
     public function index(Request $request): View
     {
-        $search = trim((string) $request->query('search', ''));
+        $search = trim($request->input('search', ''));
 
+        // Query statistik ringkasan
+        $totalTenants = Tenant::count();
+        $activeTenants = Tenant::where('status', 'active')->count();
+        $pendingTenants = Tenant::where('status', 'pending')->count();
+
+        // Query pencarian data tenant dengan eager loading relasi users
         $tenants = Tenant::query()
             ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($query) use ($search) {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('code', 'like', "%{$search}%");
-                });
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%");
             })
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
-        return view('admin.tenants.index', [
-            'tenants' => $tenants,
-            'search' => $search,
-            'totalTenants' => Tenant::count(),
-            'activeTenants' => Tenant::where('status', 'active')->count(),
-            'pendingTenants' => Tenant::where('status', 'pending')->count(),
-        ]);
+        return view('admin.tenants.index', compact(
+            'tenants',
+            'search',
+            'totalTenants',
+            'activeTenants',
+            'pendingTenants'
+        ));
     }
 
-    public function updateStatus(Request $request, Tenant $tenant): RedirectResponse
-    {
-        $request->validate([
-            'status' => ['required', 'in:active,pending,suspended,inactive'],
-        ]);
-
-        $tenant->status = $request->status;
-        $tenant->save();
-
-        return redirect()->back()->with('status', 'Status tenant berhasil diperbarui!');
-    }
-
-    // 1. Menampilkan Form Tambah Tenant
+    /**
+     * Menampilkan form tambah tenant baru.
+     */
     public function create(): View
     {
         return view('admin.tenants.create');
     }
 
-    // 2. Menyimpan Tenant Baru ke Database
+    /**
+     * Menyimpan data tenant baru ke database.
+     */
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50', 'unique:tenants,code'],
             'slug' => ['required', 'string', 'max:255', 'unique:tenants,slug'],
-            'status' => ['required', 'in:active,pending,suspended'],
-            'latitude' => ['nullable', 'numeric'],
-            'longitude' => ['nullable', 'numeric'],
+            'latitude' => ['nullable', 'string', 'max:50'],
+            'longitude' => ['nullable', 'string', 'max:50'],
+            'status' => ['required', Rule::in(['active', 'pending', 'suspended'])],
         ]);
 
         Tenant::create($validated);
 
-        return redirect()->route('admin.tenants.index')
-            ->with('status', 'Tenant baru berhasil ditambahkan!');
+        return redirect()
+            ->route('admin.tenants.index')
+            ->with('status', 'Tenant baru berhasil ditambahkan.');
     }
 
-    // 3. Menghapus Tenant
-    public function destroy(Tenant $tenant): RedirectResponse
-    {
-        $tenant->delete();
-
-        return redirect()->back()
-            ->with('status', 'Tenant '.$tenant->name.' berhasil dihapus!');
-    }
-
-    // 4. Menampilkan Halaman Detail Tenant
+    /**
+     * Menampilkan detail informasi dan statistik satu tenant.
+     */
     public function show(Tenant $tenant): View
     {
         $tenant->loadCount(['products', 'orders'])
-            ->load('balance');
+            ->load(['balance']);
 
-        return view('admin.tenants.show', [
-            'tenant' => $tenant,
-        ]);
+        return view('admin.tenants.show', compact('tenant'));
     }
 
-    // 5. Menampilkan Form Edit Tenant
+    /**
+     * Menampilkan form edit tenant.
+     */
     public function edit(Tenant $tenant): View
     {
-        return view('admin.tenants.edit', [
-            'tenant' => $tenant,
-        ]);
+        return view('admin.tenants.edit', compact('tenant'));
     }
 
-    // 6. Memperbarui Data Tenant
+    /**
+     * Memperbarui data tenant yang sudah ada.
+     */
     public function update(Request $request, Tenant $tenant): RedirectResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'code' => ['required', 'string', 'max:50', 'unique:tenants,code,'.$tenant->id],
-            'slug' => ['required', 'string', 'max:255', 'unique:tenants,slug,'.$tenant->id],
-            'status' => ['required', 'in:active,pending,suspended'],
-            'latitude' => ['nullable', 'numeric'],
-            'longitude' => ['nullable', 'numeric'],
+            'code' => ['required', 'string', 'max:50', Rule::unique('tenants', 'code')->ignore($tenant->id)],
+            'slug' => ['required', 'string', 'max:255', Rule::unique('tenants', 'slug')->ignore($tenant->id)],
+            'latitude' => ['nullable', 'string', 'max:50'],
+            'longitude' => ['nullable', 'string', 'max:50'],
+            'status' => ['required', Rule::in(['active', 'pending', 'suspended'])],
         ]);
 
         $tenant->update($validated);
 
-        return redirect()->route('admin.tenants.index')
-            ->with('status', 'Data tenant '.$tenant->name.' berhasil diperbarui!');
+        return redirect()
+            ->route('admin.tenants.index')
+            ->with('status', "Data tenant {$tenant->name} berhasil diperbarui.");
+    }
+
+    /**
+     * Mengubah status tenant secara instan lewat sakelar ON/OFF di tabel.
+     */
+    public function updateStatus(Request $request, Tenant $tenant): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['active', 'pending', 'suspended'])],
+        ]);
+
+        $tenant->update(['status' => $validated['status']]);
+
+        $statusLabel = $validated['status'] === 'active' ? 'diaktifkan (ON)' : 'dinonaktifkan (OFF)';
+
+        return redirect()
+            ->back()
+            ->with('status', "Tenant {$tenant->name} berhasil {$statusLabel}.");
+    }
+
+    /**
+     * Menghapus data tenant dari sistem.
+     */
+    public function destroy(Tenant $tenant): RedirectResponse
+    {
+        $tenantName = $tenant->name;
+        $tenant->delete();
+
+        return redirect()
+            ->route('admin.tenants.index')
+            ->with('status', "Tenant {$tenantName} berhasil dihapus.");
     }
 }
