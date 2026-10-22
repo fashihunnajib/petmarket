@@ -24,28 +24,28 @@
                 </p>
 
                 <a href="{{ route('admin.dashboard') }}"
-                   class="flex items-center gap-3 rounded-lg px-3 py-3
+                   class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors
                    {{ request()->routeIs('admin.dashboard') ? 'bg-emerald-600 text-white' : 'text-zinc-300 hover:bg-zinc-800' }}">
                     <span>▦</span>
                     <span>Manajemen Dashboard</span>
                 </a>
 
-                <a href="{{ url('/admin/tenants') }}"
-                   class="flex items-center gap-3 rounded-lg px-3 py-3
-                   {{ request()->is('admin/tenants*') ? 'bg-emerald-600 text-white' : 'text-zinc-300 hover:bg-zinc-800' }}">
+                <a href="{{ route('admin.tenants.index') }}"
+                   class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors
+                   {{ request()->routeIs('admin.tenants.*') ? 'bg-emerald-600 text-white' : 'text-zinc-300 hover:bg-zinc-800' }}">
                     <span>▣</span>
                     <span>Manajemen Tenant</span>
                 </a>
 
-                <a href="{{ url('/admin/fund-verification') }}"
-                   class="flex items-center gap-3 rounded-lg px-3 py-3
-                   {{ request()->is('admin/fund-verification*') ? 'bg-emerald-600 text-white' : 'text-zinc-300 hover:bg-zinc-800' }}">
+                <a href="{{ route('admin.withdrawals.index') }}"
+                   class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors
+                   {{ request()->routeIs('admin.withdrawals.*') ? 'bg-emerald-600 text-white' : 'text-zinc-300 hover:bg-zinc-800' }}">
                     <span>◈</span>
                     <span>Verifikasi Dana</span>
                 </a>
 
                 <a href="{{ url('/admin/settings') }}"
-                   class="flex items-center gap-3 rounded-lg px-3 py-3
+                   class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors
                    {{ request()->is('admin/settings*') ? 'bg-emerald-600 text-white' : 'text-zinc-300 hover:bg-zinc-800' }}">
                     <span>⚙</span>
                     <span>Pengaturan</span>

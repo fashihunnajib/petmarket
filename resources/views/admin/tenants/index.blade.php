@@ -12,7 +12,6 @@
             </a>
         </div>
 
-        <!-- Alert Notifikasi Berhasil (Poin 1) -->
         @if (session('status'))
             <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                 {{ session('status') }}
@@ -65,7 +64,12 @@
                         @forelse ($tenants as $tenant)
                             <tr>
                                 <td class="px-3 py-4">{{ $tenant->code }}</td>
-                                <td class="px-3 py-4 font-medium">{{ $tenant->name }}</td>
+                                <td class="px-3 py-4 font-medium">
+                                    <!-- Link ke Halaman Detail (Show) -->
+                                    <a href="{{ route('admin.tenants.show', $tenant) }}" class="text-emerald-600 hover:underline dark:text-emerald-400">
+                                        {{ $tenant->name }}
+                                    </a>
+                                </td>
                                 <td class="px-3 py-4">{{ $tenant->slug }}</td>
                                 <td class="px-3 py-4">
                                     @if ($tenant->status === 'pending')
@@ -104,13 +108,20 @@
                                     @endif
                                 </td>
                                 <td class="px-3 py-4">
-                                    <form action="{{ route('admin.tenants.destroy', $tenant) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus tenant {{ $tenant->name }}?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-100 dark:bg-red-950 dark:text-red-400">
-                                            Hapus
-                                        </button>
-                                    </form>
+                                    <div class="flex items-center gap-2">
+                                        <!-- Tombol Edit -->
+                                        <a href="{{ route('admin.tenants.edit', $tenant) }}" class="rounded-lg bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300">
+                                            Edit
+                                        </a>
+                                        <!-- Tombol Hapus -->
+                                        <form action="{{ route('admin.tenants.destroy', $tenant) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus tenant {{ $tenant->name }}?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-100 dark:bg-red-950 dark:text-red-400">
+                                                Hapus
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
@@ -119,7 +130,6 @@
                                     Belum ada tenant yang cocok.
                                 </td>
                             </tr>
-                        
                         @endforelse
                     </tbody>
                 </table>
