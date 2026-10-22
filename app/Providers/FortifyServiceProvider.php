@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -34,11 +36,29 @@ class FortifyServiceProvider extends ServiceProvider
     /**
      * Configure Fortify actions.
      */
-    private function configureActions(): void
-    {
-        Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::createUsersUsing(CreateNewUser::class);
-    }
+
+private function configureActions(): void
+{
+    Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+    Fortify::createUsersUsing(CreateNewUser::class);
+
+    Fortify::authenticateUsing(function (Request $request) {
+        $user = User::where(
+            Fortify::username(),
+            $request->input(Fortify::username())
+        )->first();
+
+        if (
+            $user &&
+            Hash::check($request->input('password'), $user->password) &&
+            $user->isActive()
+        ) {
+            return $user;
+        }
+
+        return null;
+    });
+}
 
     /**
      * Configure Fortify views.
