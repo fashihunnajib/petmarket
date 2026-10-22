@@ -2,21 +2,44 @@
 
 namespace App\Models;
 
+use Database\Factories\WithdrawalFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Withdrawal extends Model
 {
-    protected $fillable = ['amount', 'status'];
+    /** @use HasFactory<WithdrawalFactory> */
+    use HasFactory;
 
-    protected function casts(): array
-    {
-        return ['amount' => 'integer', 'transfer_snapshot' => 'array'];
-    }
+    protected $fillable = [
+        'tenant_id',
+        'tenant_bank_account_id',
+        'amount',
+        'status', // 'pending', 'approved', 'rejected'
+        'note',
+        'processed_at',
+        'processed_by',
+    ];
 
-    /** @return BelongsTo<Tenant, $this> */
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'processed_at' => 'datetime',
+    ];
+
+    /**
+     * @return BelongsTo<Tenant, $this>
+     */
     public function tenant(): BelongsTo
     {
-        return $this->belongsTo(Tenant::class);
+        return $this->belongsTo(Tenant::class, 'tenant_id');
+    }
+
+    /**
+     * @return BelongsTo<TenantBankAccount, $this>
+     */
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(TenantBankAccount::class, 'tenant_bank_account_id');
     }
 }
