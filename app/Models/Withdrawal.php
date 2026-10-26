@@ -20,6 +20,8 @@ class Withdrawal extends Model
         'amount',
         'status', // 'pending', 'approved', 'rejected'
         'note',
+        'requested_by',
+        'idempotency_key',
         'processed_at',
         'processed_by',
     ];
@@ -42,6 +44,6 @@ class Withdrawal extends Model
      */
     public function bankAccount(): BelongsTo
     {
-        return $this->belongsTo(TenantBankAccount::class, 'tenant_bank_account_id');
+        return $this->belongsTo(TenantBankAccount::class, 'bank_account_id');
     }
 }
