@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\ProductAnimalFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductAnimal extends Model
 {
+    use BelongsToTenant;
+
     /** @use HasFactory<ProductAnimalFactory> */
     use HasFactory;
 
@@ -16,7 +19,7 @@ class ProductAnimal extends Model
 
     public $incrementing = false;
 
-    protected $fillable = ['product_id', 'tenant_id', 'breed', 'age_months', 'gender', 'vaccination_status', 'weight_kg', 'health_history'];
+    protected $fillable = ['product_id', 'breed', 'age_months', 'gender', 'vaccination_status', 'weight_kg', 'health_history'];
 
     protected function casts(): array
     {

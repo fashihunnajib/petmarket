@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\WithdrawalFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,15 +10,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Withdrawal extends Model
 {
+    use BelongsToTenant;
+
     /** @use HasFactory<WithdrawalFactory> */
     use HasFactory;
 
     protected $fillable = [
-        'tenant_id',
         'tenant_bank_account_id',
         'amount',
         'status', // 'pending', 'approved', 'rejected'
         'note',
+        'requested_by',
+        'idempotency_key',
         'processed_at',
         'processed_by',
     ];
@@ -40,6 +44,6 @@ class Withdrawal extends Model
      */
     public function bankAccount(): BelongsTo
     {
-        return $this->belongsTo(TenantBankAccount::class, 'tenant_bank_account_id');
+        return $this->belongsTo(TenantBankAccount::class, 'bank_account_id');
     }
 }

@@ -9,5 +9,4 @@ use Illuminate\Support\Facades\Route;
  * route fitur ditambahkan oleh modul di app/Modules/{Modul}/routes/admin.php.
  * Administrasi tenant/role/komisi diisi Modul 5.
  */
-Route::get('/dashboard', DashboardController::class)
-    ->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

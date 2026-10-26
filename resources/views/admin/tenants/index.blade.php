@@ -1,123 +1,109 @@
-<x-layouts.admin title="Manajemen Tenant">
+<x-layouts.admin title="Manajemen & Verifikasi Tenant">
     <div class="space-y-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold">Manajemen Tenant</h1>
-                <p class="mt-1 text-sm text-zinc-500">
-                    Kelola dan pantau toko yang terdaftar di PetMarket.
-                </p>
+        <!-- Header Judul & Tombol Tambah Tenant -->
+        <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 flex-1">
+                <h2 class="text-xl font-bold text-gray-900 whitespace-nowrap">Manajemen & Verivikasi tenant</h2>
+                <div class="h-[2px] w-full bg-emerald-400"></div>
             </div>
-            <a href="{{ route('admin.tenants.create') }}" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
+            <a href="{{ route('admin.tenants.create') }}" class="rounded-sm border border-emerald-400 bg-emerald-100 px-4 py-1.5 text-sm font-semibold text-gray-900 transition hover:bg-emerald-200 whitespace-nowrap">
                 + Tambah Tenant
             </a>
         </div>
 
         @if (session('status'))
-            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+            <div class="rounded-sm border border-emerald-400 bg-emerald-50 p-4 text-sm font-medium text-emerald-800">
                 {{ session('status') }}
             </div>
         @endif
 
-        <div class="grid gap-4 sm:grid-cols-3">
-            <div class="rounded-xl border bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-                <p class="text-sm text-zinc-500">Total Tenant</p>
-                <p class="mt-2 text-3xl font-bold">{{ $totalTenants }}</p>
-            </div>
-
-            <div class="rounded-xl border bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-                <p class="text-sm text-zinc-500">Tenant Aktif</p>
-                <p class="mt-2 text-3xl font-bold text-emerald-600">{{ $activeTenants }}</p>
-            </div>
-
-            <div class="rounded-xl border bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-                <p class="text-sm text-zinc-500">Menunggu</p>
-                <p class="mt-2 text-3xl font-bold text-amber-600">{{ $pendingTenants }}</p>
-            </div>
-        </div>
-
-        <div class="rounded-xl border bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-            <form method="GET" action="{{ route('admin.tenants.index') }}" class="mb-5 flex flex-wrap gap-3">
-                <input
-                    type="text"
-                    name="search"
-                    value="{{ $search }}"
-                    placeholder="Cari nama atau kode tenant..."
-                    class="min-w-0 flex-1 rounded-lg border border-zinc-300 px-4 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-                >
-                <button class="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white">
+        <!-- Box Pencarian Tenant -->
+        <div class="rounded-sm border border-emerald-400 bg-white p-6">
+            <form method="GET" action="{{ route('admin.tenants.index') }}" class="flex items-center gap-4">
+                <label for="search" class="text-sm font-bold text-gray-900 whitespace-nowrap">
+                    Cari Tenant:
+                </label>
+                <input type="text"
+                       id="search"
+                       name="search"
+                       value="{{ $search ?? request('search') }}"
+                       placeholder=""
+                       class="w-full border-b border-gray-400 px-2 py-1 text-sm focus:border-emerald-500 focus:outline-none">
+                <button type="submit" class="rounded-sm border border-emerald-400 bg-emerald-100 px-6 py-1 text-sm font-semibold text-gray-900 transition hover:bg-emerald-200">
                     Cari
                 </button>
             </form>
+        </div>
 
+        <!-- Box Utama Tabel Tenant -->
+        <div class="rounded-sm border border-emerald-400 bg-white p-6 space-y-6">
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="border-b text-zinc-500 dark:border-zinc-700">
-                        <tr>
-                            <th class="px-3 py-3">Kode</th>
-                            <th class="px-3 py-3">Nama Tenant</th>
-                            <th class="px-3 py-3">Slug</th>
-                            <th class="px-3 py-3">Status</th>
-                            <th class="px-3 py-3">Aksi</th>
+                <table class="w-full border-collapse border border-emerald-400 text-center text-sm">
+                    <thead>
+                        <tr class="border-b border-emerald-400 bg-white font-semibold text-gray-900">
+                            <th class="border-r border-emerald-400 px-4 py-3">Id tenant</th>
+                            <th class="border-r border-emerald-400 px-4 py-3">Nama toko</th>
+                            <th class="border-r border-emerald-400 px-4 py-3">Pemilik</th>
+                            <th class="border-r border-emerald-400 px-4 py-3">Status</th>
+                            <th class="px-4 py-3">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y dark:divide-zinc-800">
+                    <tbody class="divide-y divide-emerald-400 text-gray-900">
                         @forelse ($tenants as $tenant)
                             <tr>
-                                <td class="px-3 py-4">{{ $tenant->code }}</td>
-                                <td class="px-3 py-4 font-medium">
-                                    <!-- Link ke Halaman Detail (Show) -->
-                                    <a href="{{ route('admin.tenants.show', $tenant) }}" class="text-emerald-600 hover:underline dark:text-emerald-400">
+                                <td class="border-r border-emerald-400 px-4 py-3 font-medium">
+                                    #{{ $tenant->code }}
+                                </td>
+                                <td class="border-r border-emerald-400 px-4 py-3 font-medium text-left pl-6">
+                                    <a href="{{ route('admin.tenants.show', $tenant) }}" class="hover:underline text-gray-900 font-bold">
                                         {{ $tenant->name }}
                                     </a>
                                 </td>
-                                <td class="px-3 py-4">{{ $tenant->slug }}</td>
-                                <td class="px-3 py-4">
-                                    @if ($tenant->status === 'pending')
-                                        <div class="flex items-center gap-1.5">
-                                            <form method="POST" action="{{ route('admin.tenants.status', $tenant) }}">
+                                <td class="border-r border-emerald-400 px-4 py-3 text-left pl-6">
+                                    {{ $tenant->owner_name ?? $tenant->users?->first()?->name ?? 'Pemilik' }}
+                                </td>
+                                <td class="border-r border-emerald-400 px-4 py-3">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <!-- Indikator Bulatan Status -->
+                                        <span class="h-3 w-3 rounded-full {{ $tenant->status === 'active' ? 'bg-green-500' : 'bg-red-500' }}"></span>
+
+                                        <!-- Sakelar Form ON / OFF -->
+                                        <div class="inline-flex rounded-full border border-gray-400 p-0.5">
+                                            <!-- Tombol ON -->
+                                            <form method="POST" action="{{ route('admin.tenants.status', $tenant) }}" class="inline">
                                                 @csrf
                                                 <input type="hidden" name="status" value="active">
-                                                <button type="submit" class="rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-700">
-                                                    Setujui
+                                                <button type="submit" 
+                                                        class="rounded-full px-3 py-0.5 text-xs font-bold transition {{ $tenant->status === 'active' ? 'bg-emerald-700 text-white' : 'text-gray-500 hover:text-gray-900' }}">
+                                                    ON
                                                 </button>
                                             </form>
-                                            <form method="POST" action="{{ route('admin.tenants.status', $tenant) }}">
+
+                                            <!-- Tombol OFF -->
+                                            <form method="POST" action="{{ route('admin.tenants.status', $tenant) }}" class="inline">
                                                 @csrf
                                                 <input type="hidden" name="status" value="suspended">
-                                                <button type="submit" class="rounded-lg bg-red-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-red-700">
-                                                    Tolak
+                                                <button type="submit" 
+                                                        class="rounded-full px-3 py-0.5 text-xs font-bold transition {{ $tenant->status !== 'active' ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-gray-900' }}">
+                                                    OFF
                                                 </button>
                                             </form>
                                         </div>
-                                    @else
-                                        @php
-                                            $statusClass = match ($tenant->status) {
-                                                'active' => 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
-                                                'suspended' => 'bg-red-100 text-red-700 hover:bg-red-200',
-                                                default => 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200',
-                                            };
-                                            $nextStatus = $tenant->status === 'active' ? 'suspended' : 'active';
-                                        @endphp
-                                        <form method="POST" action="{{ route('admin.tenants.status', $tenant) }}">
-                                            @csrf
-                                            <input type="hidden" name="status" value="{{ $nextStatus }}">
-                                            <button type="submit" class="rounded-full px-3 py-1 text-xs font-semibold transition-colors {{ $statusClass }}">
-                                                {{ ucfirst($tenant->status) }}
-                                            </button>
-                                        </form>
-                                    @endif
+                                    </div>
                                 </td>
-                                <td class="px-3 py-4">
-                                    <div class="flex items-center gap-2">
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center justify-center gap-2">
                                         <!-- Tombol Edit -->
-                                        <a href="{{ route('admin.tenants.edit', $tenant) }}" class="rounded-lg bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300">
+                                        <a href="{{ route('admin.tenants.edit', $tenant) }}" 
+                                           class="rounded-sm border border-emerald-400 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-gray-900 transition hover:bg-emerald-100">
                                             Edit
                                         </a>
                                         <!-- Tombol Hapus -->
-                                        <form action="{{ route('admin.tenants.destroy', $tenant) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus tenant {{ $tenant->name }}?');">
+                                        <form action="{{ route('admin.tenants.destroy', $tenant) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus tenant {{ $tenant->name }}?');" class="inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-100 dark:bg-red-950 dark:text-red-400">
+                                            <button type="submit" 
+                                                    class="rounded-sm border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-100">
                                                 Hapus
                                             </button>
                                         </form>
@@ -126,7 +112,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-3 py-8 text-center text-zinc-500">
+                                <td colspan="5" class="py-6 text-center text-gray-500">
                                     Belum ada tenant yang cocok.
                                 </td>
                             </tr>
@@ -135,7 +121,13 @@
                 </table>
             </div>
 
-            <div class="mt-5">
+            <!-- Catatan Interaksi -->
+            <div class="space-y-1 pt-2 text-xs text-gray-800 font-medium">
+                <p class="font-bold">*Catatan Interaksi:</p>
+                <p>- Klik sakelar [ON/OFF] untuk menyetujui (true) atau memblokir (false) toko secara instan. Toko Non-Aktif disembunyikan dari aplikasi.</p>
+            </div>
+
+            <div class="mt-4">
                 {{ $tenants->links() }}
             </div>
         </div>
