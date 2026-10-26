@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -19,23 +21,25 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(LoginResponseContract::class, fn () => new class implements LoginResponseContract
-        {
-            public function toResponse($request)
-            {
-                $user = auth()->user();
+        $this->app->singleton(
+            LoginResponseContract::class,
+            fn () => new class implements LoginResponseContract {
+                public function toResponse($request)
+                {
+                    $user = auth()->user();
 
-                if ($user?->hasRole('tenant')) {
-                    return redirect()->route('tenant.orders.index');
+                    if ($user?->hasRole('tenant')) {
+                        return redirect()->route('tenant.orders.index');
+                    }
+
+                    if ($user?->hasRole('admin')) {
+                        return redirect()->route('admin.dashboard');
+                    }
+
+                    return redirect('/dashboard');
                 }
-
-                if ($user?->hasRole('admin')) {
-                    return redirect()->route('admin.dashboard');
-                }
-
-                return redirect('/dashboard');
             }
-        });
+        );
     }
 
     /**
@@ -48,10 +52,32 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
     }
 
+    /**
+     * Configure Fortify actions.
+     */
     private function configureActions(): void
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+
+        Fortify::authenticateUsing(function (Request $request) {
+            $usernameField = Fortify::username();
+
+            $user = User::where(
+                $usernameField,
+                $request->input($usernameField)
+            )->first();
+
+            if (
+                $user &&
+                Hash::check($request->input('password'), $user->password) &&
+                $user->isActive()
+            ) {
+                return $user;
+            }
+
+            return null;
+        });
     }
 
     private function configureViews(): void
@@ -68,11 +94,16 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureRateLimiting(): void
     {
         RateLimiter::for('two-factor', function (Request $request) {
-            return Limit::perMinute(5)->by($request->session()->get('login.id'));
+            return Limit::perMinute(5)->by(
+                $request->session()->get('login.id')
+            );
         });
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $throttleKey = Str::transliterate(
+                Str::lower($request->input(Fortify::username()))
+                . '|' . $request->ip()
+            );
 
             return Limit::perMinute(5)->by($throttleKey);
         });
@@ -81,7 +112,8 @@ class FortifyServiceProvider extends ServiceProvider
             $credentialId = $request->input('credential.id');
 
             return Limit::perMinute(10)->by(
-                ($credentialId ?: $request->session()->getId()).'|'.$request->ip(),
+                ($credentialId ?: $request->session()->getId())
+                . '|' . $request->ip()
             );
         });
     }
