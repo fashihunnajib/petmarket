@@ -34,6 +34,7 @@ final class PortalRoutes
         Route::middleware(['web', 'auth', 'verified', 'tenant'])
             ->prefix('tenant/{tenant:slug}')
             ->name('tenant.')
+            ->scopeBindings()
             ->group($routes);
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\ProductGoodFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductGood extends Model
 {
+    use BelongsToTenant;
+
     /** @use HasFactory<ProductGoodFactory> */
     use HasFactory;
 
@@ -16,7 +19,7 @@ class ProductGood extends Model
 
     public $incrementing = false;
 
-    protected $fillable = ['product_id', 'tenant_id', 'weight_gram', 'dimension_cm', 'expired_date'];
+    protected $fillable = ['product_id', 'weight_gram', 'dimension_cm', 'expired_date'];
 
     protected function casts(): array
     {

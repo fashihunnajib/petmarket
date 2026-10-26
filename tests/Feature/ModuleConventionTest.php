@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Tenant;
 use App\Models\User;
+use App\Models\UserTenantRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +28,14 @@ class ModuleConventionTest extends TestCase
             'status' => 'active',
             'email_verified_at' => now(),
         ]);
+    }
+
+    private function tenantWithMember(User $user): Tenant
+    {
+        $tenant = Tenant::factory()->create();
+        UserTenantRole::create(['user_id' => $user->id, 'tenant_id' => $tenant->id, 'role' => 'operator']);
+
+        return $tenant;
     }
 
     /**
@@ -62,22 +72,28 @@ class ModuleConventionTest extends TestCase
 
         $this->assertNotNull($route, 'Route modul tidak dimuat oleh provider');
         $this->assertSame('tenant/{tenant}/probe', $route->uri());
-        foreach (['web', 'auth', 'verified', 'role:tenant'] as $middleware) {
+        foreach (['web', 'auth', 'verified', 'tenant'] as $middleware) {
             $this->assertContains($middleware, $route->gatherMiddleware());
         }
+        $this->assertTrue($route->enforcesScopedBindings());
     }
 
     public function test_module_route_is_guarded_like_core_portal_routes(): void
     {
         $this->registerProbeModule();
-        $url = route('tenant.probe', ['tenant' => 'demo']);
+        $member = $this->user('tenant');
+        $tenant = $this->tenantWithMember($member);
+        $url = route('tenant.probe', ['tenant' => $tenant->slug]);
 
         $this->get($url)->assertRedirect(route('login'));
 
+        // Bukan anggota tenant (termasuk admin) → 403 dari SetTenantContext.
         $this->actingAs($this->user('admin'));
         $this->get($url)->assertForbidden();
-
         $this->actingAs($this->user('tenant'));
+        $this->get($url)->assertForbidden();
+
+        $this->actingAs($member);
         $this->get($url)->assertOk()->assertSee('Probe page')->assertSee('Probe count: 0');
     }
 
@@ -96,7 +112,7 @@ class ModuleConventionTest extends TestCase
         $this->registerProbeModule();
 
         $portals = [
-            'tenant.' => ['web', 'auth', 'verified', 'role:tenant'],
+            'tenant.' => ['web', 'auth', 'verified', 'tenant'],
             'admin.' => ['web', 'auth', 'verified', 'role:admin'],
             'customer.' => ['web'],
         ];

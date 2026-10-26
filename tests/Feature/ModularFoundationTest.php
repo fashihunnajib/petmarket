@@ -7,10 +7,10 @@ use App\Models\User;
 use App\Models\UserTenantRole;
 use App\Modules\Admin\AdminServiceProvider;
 use App\Modules\Catalog\CatalogServiceProvider;
-use App\Modules\Shipping\ShippingServiceProvider;
 use App\Modules\Ordering\OrderingServiceProvider;
 use App\Modules\Payments\PaymentsServiceProvider;
 use App\Modules\Reporting\ReportingServiceProvider;
+use App\Modules\Shipping\ShippingServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\ServiceProvider;
 use Tests\TestCase;
@@ -30,7 +30,7 @@ class ModularFoundationTest extends TestCase
 
     public function test_customer_route_is_public(): void
     {
-        $this->get(route('customer.home', ['canteen' => 'demo']))->assertOk();
+        $this->get(route('customer.home', ['shop' => 'demo']))->assertOk();
     }
 
     public function test_guest_is_redirected_to_login_on_tenant_and_admin(): void
@@ -41,7 +41,7 @@ class ModularFoundationTest extends TestCase
 
     private function tenantWithMember(User $user, string $status = 'active'): Tenant
     {
-        $tenant = Tenant::factory()->create();
+        $tenant = Tenant::factory()->create(['status' => $status]);
         UserTenantRole::create(['user_id' => $user->id, 'tenant_id' => $tenant->id, 'role' => 'operator']);
 
         return $tenant;
