@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome')->name('home');
+Route::view('/', 'home')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
@@ -13,8 +13,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         return view('dashboard');
     })->name('dashboard');
-
-    // Baris updateStatus dihapus dari sini karena sudah dipindah ke rute PortalRoutes::admin
 });
+
+// Baris updateStatus sudah dipindahkan ke rute PortalRoutes::admin
 
 require __DIR__.'/settings.php';

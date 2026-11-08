@@ -1,4 +1,3 @@
-
 <?php
 
 use App\Modules\Catalog\Http\Controllers\PublicCatalogController;

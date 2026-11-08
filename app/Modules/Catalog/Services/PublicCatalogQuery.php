@@ -5,49 +5,64 @@ namespace App\Modules\Catalog\Services;
 use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-/**
- * Kueri katalog publik lintas-tenant untuk platform PetMarket.
- * Melintasi batas tenant (withoutGlobalScope) secara eksplisit untuk menampilkan
- * etalase produk dari seluruh Pet Shop (tenant) yang berstatus aktif.
- */
 final class PublicCatalogQuery
 {
     /**
-     * Menampilkan daftar produk katalog publik dengan pencarian, filter jenis, dan paginasi.
+     * Katalog lintas-tenant untuk halaman publik PetMarket.
      *
-     * @param  string|null  $search  Kata kunci nama produk atau ras hewan
-     * @param  string|null  $type  Saringan entitas ('animal' atau 'good')
-     * @param  int|null  $categoryId  Saringan kategori produk
-     * @param  int  $perPage  Jumlah item per halaman
      * @return LengthAwarePaginator<int, Product>
      */
     public function browse(
         ?string $search = null,
         ?string $type = null,
         ?int $categoryId = null,
+        ?int $minPrice = null,
+        ?int $maxPrice = null,
         int $perPage = 16
     ): LengthAwarePaginator {
         return Product::query()
-            ->withoutGlobalScope('tenant') // Bypass eksplisit isolasi satu tenant untuk etalase publik
-            ->sellable() // Memastikan is_available = true dan stock_qty > 0
+            ->withoutGlobalScope('tenant')
             ->whereHas('tenant', function ($query): void {
-                $query->where('status', 'active'); // Hanya menampilkan produk dari toko yang aktif
+                $query->where('status', 'active');
             })
-            ->when($search, function ($query, string $keyword): void {
+            ->whereHas('category', function ($query): void {
+                $query->where('is_active', true);
+            })
+            ->sellable()
+            ->when($search !== null && trim($search) !== '', function ($query) use ($search): void {
+                $keyword = trim($search);
+
                 $query->where(function ($q) use ($keyword): void {
                     $q->where('name', 'like', "%{$keyword}%")
-                        ->orWhereHas('animalDetail', fn ($a) => $a->where('breed', 'like', "%{$keyword}%"));
+                        ->orWhereHas('animalDetail', function ($animal) use ($keyword): void {
+                            $animal->where('breed', 'like', "%{$keyword}%");
+                        });
                 });
             })
-            ->when($type, fn ($query, string $t) => $query->where('type', $t))
-            ->when($categoryId, fn ($query, int $catId) => $query->where('category_id', $catId))
+            ->when(
+                in_array($type, ['animal', 'good'], true),
+                fn ($query) => $query->where('type', $type)
+            )
+            ->when(
+                $categoryId !== null,
+                fn ($query) => $query->where('category_id', $categoryId)
+            )
+            ->when(
+                $minPrice !== null,
+                fn ($query) => $query->where('base_price', '>=', $minPrice)
+            )
+            ->when(
+                $maxPrice !== null,
+                fn ($query) => $query->where('base_price', '<=', $maxPrice)
+            )
             ->with([
-                'tenant:id,name,slug,latitude,longitude,max_delivery_radius_km',
-                'category:id,name',
+                'tenant:id,name,slug,status',
+                'category:id,tenant_id,name,is_active',
                 'animalDetail',
                 'goodDetail',
             ])
             ->latest()
-            ->paginate($perPage);
+            ->paginate($perPage)
+            ->withQueryString();
     }
 }
