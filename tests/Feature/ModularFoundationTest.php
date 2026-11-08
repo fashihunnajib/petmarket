@@ -1,4 +1,6 @@
-<namespace Tests\Feature;
+<?php
+
+namespace Tests\Feature;
 
 use App\Models\Tenant;
 use App\Models\User;
@@ -26,15 +28,17 @@ class ModularFoundationTest extends TestCase
         ]);
     }
 
-public function test_customer_route_is_public(): void
-{
-    Tenant::factory()->create([
-        'slug' => 'demo',
-        'status' => 'active',
-    ]);
+    public function test_customer_route_is_public(): void
+    {
+        Tenant::factory()->create([
+            'slug' => 'demo',
+            'status' => 'active',
+        ]);
 
-    $this->get(route('customer.home', ['shop' => 'demo']))->assertOk();
-}    public function test_guest_is_redirected_to_login_on_tenant_and_admin(): void
+        $this->get(route('customer.home', ['shop' => 'demo']))->assertOk();
+    }
+
+    public function test_guest_is_redirected_to_login_on_tenant_and_admin(): void
     {
         $this->get(route('tenant.dashboard', ['tenant' => 'demo']))->assertRedirect(route('login'));
         $this->get(route('admin.dashboard'))->assertRedirect(route('login'));
