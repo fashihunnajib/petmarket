@@ -23,7 +23,8 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $this->app->singleton(
             LoginResponseContract::class,
-            fn () => new class implements LoginResponseContract {
+            fn () => new class implements LoginResponseContract
+            {
                 public function toResponse($request)
                 {
                     $user = auth()->user();
@@ -102,7 +103,7 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(
                 Str::lower($request->input(Fortify::username()))
-                . '|' . $request->ip()
+                .'|'.$request->ip()
             );
 
             return Limit::perMinute(5)->by($throttleKey);
@@ -113,7 +114,7 @@ class FortifyServiceProvider extends ServiceProvider
 
             return Limit::perMinute(10)->by(
                 ($credentialId ?: $request->session()->getId())
-                . '|' . $request->ip()
+                .'|'.$request->ip()
             );
         });
     }
