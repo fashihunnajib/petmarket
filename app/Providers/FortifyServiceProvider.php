@@ -35,7 +35,7 @@ class FortifyServiceProvider extends ServiceProvider
                             ->where('user_id', $user->id)
                             ->value('tenant_id');
 
-                            /** @var Tenant|null $tenant */
+                        /** @var Tenant|null $tenant */
                         $tenant = $tenantId ? Tenant::find($tenantId) : Tenant::first();
 
                         if ($tenant) {

@@ -16,7 +16,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->where('user_id', $user->id)
                 ->value('tenant_id');
 
-                /** @var Tenant|null $tenant */
+            /** @var Tenant|null $tenant */
             // Ambil data tenant, atau fallback ke tenant pertama untuk testing
             $tenant = $tenantId ? Tenant::find($tenantId) : Tenant::first();
 

@@ -94,9 +94,8 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
- * @return HasOne<Tenant, $this>
- */
-
+     * @return HasOne<Tenant, $this>
+     */
     public function tenant(): HasOne
     {
         return $this->hasOne(Tenant::class);
