@@ -30,6 +30,11 @@ class ModularFoundationTest extends TestCase
 
     public function test_customer_route_is_public(): void
     {
+        Tenant::factory()->create([
+            'slug' => 'demo',
+            'status' => 'active',
+        ]);
+
         $this->get(route('customer.home', ['shop' => 'demo']))->assertOk();
     }
 
