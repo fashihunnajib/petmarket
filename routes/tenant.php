@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Tenant\DashboardController;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Route;
 
@@ -8,5 +9,4 @@ use Illuminate\Support\Facades\Route;
  * Grup (middleware auth+verified+tenant/SetTenantContext + scopeBindings) didefinisikan tunggal di
  * PortalRoutes::tenant(); route fitur ditambahkan modul di app/Modules/{Modul}/routes/tenant.php.
  */
-Route::get('/dashboard', fn (Tenant $tenant) => view('tenant.dashboard', ['tenant' => $tenant]))
-    ->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
