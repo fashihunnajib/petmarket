@@ -11,33 +11,56 @@ class DashboardController extends Controller
 {
     public function index(Tenant $tenant): View
     {
-        // 1. Total Pesanan
+        // 1. Total seluruh pesanan milik tenant
         $totalOrders = DB::table('tenant_orders')
             ->where('tenant_id', $tenant->id)
             ->count();
 
-        // 2. Pendapatan Hari Ini (Pesanan Selesai)
+        // 2. Pendapatan hari ini
         $incomeToday = DB::table('tenant_orders')
             ->where('tenant_id', $tenant->id)
-            ->where('status', 'completed')
             ->whereDate('created_at', now()->today())
-            ->sum(DB::raw('grand_total_amount - commission_amount'));
+            ->sum('grand_total_amount') ?? 0;
 
-        // 3. Saldo Toko (Kolom available_amount)
+        // 3. Saldo Toko (Prioritas dari tenant_balances, fallback ke akumulasi pesanan jika null)
         $storeBalance = DB::table('tenant_balances')
             ->where('tenant_id', $tenant->id)
-            ->value('available_amount') ?? 0;
+            ->value('available_amount');
 
-        // 4. Produk Aktif (Kolom is_available)
+        if ($storeBalance === null) {
+            $storeBalance = DB::table('tenant_orders')
+                ->where('tenant_id', $tenant->id)
+                ->sum('grand_total_amount') ?? 0;
+        }
+
+        $tenantBalance = $storeBalance;
+
+        // 4. Total produk aktif
         $activeProductsCount = DB::table('products')
             ->where('tenant_id', $tenant->id)
             ->where('is_available', true)
             ->count();
 
-        // 5. Pesanan Terbaru
+        // 5. Data 7 Hari Terakhir untuk Grafik Pendapatan
+        $chartLabels = [];
+        $chartData = [];
+
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $chartLabels[] = $date->format('d M');
+
+            $dailyTotal = DB::table('tenant_orders')
+                ->where('tenant_id', $tenant->id)
+                ->whereDate('created_at', $date->toDateString())
+                ->sum('grand_total_amount') ?? 0;
+
+            $chartData[] = (float) $dailyTotal;
+        }
+
+        // 6. 5 pesanan terbaru
         $recentOrders = DB::table('tenant_orders')
             ->where('tenant_id', $tenant->id)
-            ->latest()
+            ->latest('created_at')
             ->take(5)
             ->get();
 
@@ -46,7 +69,10 @@ class DashboardController extends Controller
             'totalOrders',
             'incomeToday',
             'storeBalance',
+            'tenantBalance',
             'activeProductsCount',
+            'chartLabels',
+            'chartData',
             'recentOrders'
         ));
     }

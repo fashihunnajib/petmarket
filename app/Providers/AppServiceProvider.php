@@ -6,6 +6,7 @@ use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -28,6 +29,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Membatasi parameter route agar angka saja (mencegah bentrok 404 pada URL /products/create)
+        Route::pattern('product', '[0-9]+');
+        Route::pattern('id', '[0-9]+');
+
         $this->configureDefaults();
     }
 
