@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -30,7 +31,20 @@ class FortifyServiceProvider extends ServiceProvider
                     $user = auth()->user();
 
                     if ($user?->hasRole('tenant')) {
-                        return redirect()->route('tenant.orders.index');
+                        $tenantId = \DB::table('user_tenant_roles')
+                            ->where('user_id', $user->id)
+                            ->value('tenant_id');
+
+                            /** @var Tenant|null $tenant */
+                        $tenant = $tenantId ? Tenant::find($tenantId) : Tenant::first();
+
+                        if ($tenant) {
+                            return redirect()->route('tenant.dashboard', [
+                                'tenant' => $tenant->slug ?? $tenant->id,
+                            ]);
+                        }
+
+                        return redirect('/dashboard');
                     }
 
                     if ($user?->hasRole('admin')) {
