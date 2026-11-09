@@ -16,22 +16,20 @@ class DashboardController extends Controller
             ->where('tenant_id', $tenant->id)
             ->count();
 
-        // 2. Pendapatan hari ini
-        $incomeToday = DB::table('tenant_orders')
+        // 2. Pendapatan hari ini (sum mengembalikan numeric, tidak perlu ?? 0)
+        $incomeToday = (float) DB::table('tenant_orders')
             ->where('tenant_id', $tenant->id)
             ->whereDate('created_at', now()->today())
-            ->sum('grand_total_amount') ?? 0;
+            ->sum('grand_total_amount');
 
-        // 3. Saldo Toko (Prioritas dari tenant_balances, fallback ke akumulasi pesanan jika null)
-        $storeBalance = DB::table('tenant_balances')
+        // 3. Saldo Toko
+        $rawBalance = DB::table('tenant_balances')
             ->where('tenant_id', $tenant->id)
             ->value('available_amount');
 
-        if ($storeBalance === null) {
-            $storeBalance = DB::table('tenant_orders')
-                ->where('tenant_id', $tenant->id)
-                ->sum('grand_total_amount') ?? 0;
-        }
+        $storeBalance = $rawBalance !== null
+            ? (float) $rawBalance
+            : (float) DB::table('tenant_orders')->where('tenant_id', $tenant->id)->sum('grand_total_amount');
 
         $tenantBalance = $storeBalance;
 
@@ -49,12 +47,12 @@ class DashboardController extends Controller
             $date = now()->subDays($i);
             $chartLabels[] = $date->format('d M');
 
-            $dailyTotal = DB::table('tenant_orders')
+            $dailyTotal = (float) DB::table('tenant_orders')
                 ->where('tenant_id', $tenant->id)
                 ->whereDate('created_at', $date->toDateString())
-                ->sum('grand_total_amount') ?? 0;
+                ->sum('grand_total_amount');
 
-            $chartData[] = (float) $dailyTotal;
+            $chartData[] = $dailyTotal;
         }
 
         // 6. 5 pesanan terbaru
