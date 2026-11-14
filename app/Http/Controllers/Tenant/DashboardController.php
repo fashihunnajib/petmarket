@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
+use App\Models\TenantOrder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -16,10 +17,17 @@ class DashboardController extends Controller
             ->where('tenant_id', $tenant->id)
             ->count();
 
-        // 2. Pendapatan hari ini (sum mengembalikan numeric, tidak perlu ?? 0)
+        // 2. Pendapatan bersih hari ini dari pesanan yang sudah selesai
         $incomeToday = (float) DB::table('tenant_orders')
             ->where('tenant_id', $tenant->id)
+            ->where('status', 'completed')
             ->whereDate('created_at', now()->today())
+            ->sum('net_amount');
+
+        // 2b. Total semua pendapatan kotor (dari seluruh pesanan selesai)
+        $totalGrossRevenue = (float) DB::table('tenant_orders')
+            ->where('tenant_id', $tenant->id)
+            ->where('status', 'completed')
             ->sum('grand_total_amount');
 
         // 3. Saldo Toko
@@ -29,7 +37,10 @@ class DashboardController extends Controller
 
         $storeBalance = $rawBalance !== null
             ? (float) $rawBalance
-            : (float) DB::table('tenant_orders')->where('tenant_id', $tenant->id)->sum('grand_total_amount');
+            : (float) DB::table('tenant_orders')
+                ->where('tenant_id', $tenant->id)
+                ->where('status', 'completed')
+                ->sum('net_amount');
 
         $tenantBalance = $storeBalance;
 
@@ -49,15 +60,16 @@ class DashboardController extends Controller
 
             $dailyTotal = (float) DB::table('tenant_orders')
                 ->where('tenant_id', $tenant->id)
+                ->where('status', 'completed')
                 ->whereDate('created_at', $date->toDateString())
-                ->sum('grand_total_amount');
+                ->sum('net_amount');
 
             $chartData[] = $dailyTotal;
         }
 
-        // 6. 5 pesanan terbaru
-        $recentOrders = DB::table('tenant_orders')
-            ->where('tenant_id', $tenant->id)
+        // 6. 5 pesanan terbaru beserta daftar item produknya
+        $recentOrders = TenantOrder::where('tenant_id', $tenant->id)
+            ->with(['items', 'user'])
             ->latest('created_at')
             ->take(5)
             ->get();
@@ -66,6 +78,7 @@ class DashboardController extends Controller
             'tenant',
             'totalOrders',
             'incomeToday',
+            'totalGrossRevenue',
             'storeBalance',
             'tenantBalance',
             'activeProductsCount',
