@@ -280,8 +280,8 @@ class TenantController extends Controller
         $tenantName = $tenant->name;
 
         $tenant->update([
-            'code' => $tenant->code . '_del_' . $tenant->id,
-            'slug' => $tenant->slug . '-del-' . $tenant->id,
+            'code' => $tenant->code.'_del_'.$tenant->id,
+            'slug' => $tenant->slug.'-del-'.$tenant->id,
         ]);
 
         $tenant->delete();
