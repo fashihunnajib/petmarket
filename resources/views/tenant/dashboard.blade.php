@@ -44,9 +44,9 @@
             <div>
                 <span class="text-xs font-semibold text-slate-400">Pendapatan Hari Ini</span>
                 <h3 class="text-2xl font-bold text-slate-800 mt-1">Rp {{ number_format($incomeToday, 0, ',', '.') }}</h3>
-                <span class="text-xs text-emerald-500 font-semibold flex items-center gap-1 mt-1">
-                    ↑ +15% <span class="text-slate-400 font-normal">dari kemarin</span>
-                </span>
+                <p class="mt-1 text-xs font-medium {{ $incomeToday > 0 ? 'text-emerald-600' : 'text-gray-400' }}">
+    {{ $incomeToday > 0 ? '↑ Pemasukan aktif hari ini' : 'Belum ada transaksi hari ini' }}
+</p>
             </div>
             <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl font-bold">💲</div>
         </div>
@@ -78,9 +78,9 @@
             <div>
                 <span class="text-xs font-semibold text-slate-400">Produk Aktif</span>
                 <h3 class="text-2xl font-bold text-slate-800 mt-1">{{ number_format($activeProductsCount) }}</h3>
-                <span class="text-xs text-emerald-500 font-semibold flex items-center gap-1 mt-1">
-                    +2 <span class="text-slate-400 font-normal">produk baru</span>
-                </span>
+                <p class="mt-1 text-xs font-medium {{ $activeProductsCount > 0 ? 'text-emerald-600' : 'text-gray-400' }}">
+    {{ $activeProductsCount > 0 ? $activeProductsCount . ' produk siap dijual' : 'Belum ada produk aktif' }}
+</p>
             </div>
             <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl font-bold">📦</div>
         </div>
@@ -106,29 +106,35 @@
                             <th class="pb-3 font-semibold">Waktu</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
-                        <tr>
-                            <td class="py-3 font-bold text-slate-800">#ORD-952A</td>
-                            <td class="py-3">Kalung Perintis (Hewan)</td>
-                            <td class="py-3"><span class="px-2.5 py-1 rounded-full text-[10px] bg-emerald-100 text-emerald-700 font-semibold">Pesanan Baru</span></td>
-                            <td class="py-3">Rp 120.000</td>
-                            <td class="py-3 text-slate-400">10:24</td>
-                        </tr>
-                        <tr>
-                            <td class="py-3 font-bold text-slate-800">#ORD-951B</td>
-                            <td class="py-3">Pakan Burung (Kuning)</td>
-                            <td class="py-3"><span class="px-2.5 py-1 rounded-full text-[10px] bg-amber-100 text-amber-700 font-semibold">Diproses</span></td>
-                            <td class="py-3">Rp 125.000</td>
-                            <td class="py-3 text-slate-400">09:47</td>
-                        </tr>
-                        <tr>
-                            <td class="py-3 font-bold text-slate-800">#ORD-950C</td>
-                            <td class="py-3">Kandang Kucing (Bening)</td>
-                            <td class="py-3"><span class="px-2.5 py-1 rounded-full text-[10px] bg-blue-100 text-blue-700 font-semibold">Kemitraan</span></td>
-                            <td class="py-3">Rp 350.000</td>
-                            <td class="py-3 text-slate-400">08:33</td>
-                        </tr>
-                    </tbody>
+                    <tbody class="divide-y divide-gray-100 text-sm">
+    @forelse($recentOrders as $order)
+        <tr class="hover:bg-gray-50/70 transition">
+            <td class="py-3.5 font-semibold text-gray-900">
+                {{ $order->order_number ?? $order->code ?? ('#ORD-' . $order->id) }}
+            </td>
+            <td class="py-3.5 text-gray-700">
+                {{ $order->customer_name ?? 'Pesanan Pelanggan' }}
+            </td>
+            <td class="py-3.5">
+                <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                    {{ ucfirst(str_replace('_', ' ', $order->status ?? 'Baru')) }}
+                </span>
+            </td>
+            <td class="py-3.5 font-semibold text-gray-900">
+                Rp {{ number_format((float) ($order->grand_total_amount ?? $order->total_amount ?? 0), 0, ',', '.') }}
+            </td>
+            <td class="py-3.5 text-gray-400">
+                {{ \Carbon\Carbon::parse($order->created_at)->format('H:i') }}
+            </td>
+        </tr>
+    @empty
+        <tr>
+            <td colspan="5" class="py-8 text-center text-sm text-gray-400">
+                Belum ada pesanan masuk untuk toko ini.
+            </td>
+        </tr>
+    @endforelse
+</tbody>
                 </table>
             </div>
         </div>
