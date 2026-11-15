@@ -1,10 +1,11 @@
 <?php
+
 namespace App\Modules\Ordering\Data;
 
 final readonly class CartView
 {
     /**
-     * @param list<CartLine> $lines
+     * @param  list<CartLine>  $lines
      */
     public function __construct(
         public array $lines,
@@ -28,14 +29,15 @@ final readonly class CartView
         $groups = [];
         foreach ($this->lines as $line) {
             $groups[$line->tenantId] ??= [
-                'tenant_id' => $line->tenantId, 
-                'tenant_name' => $line->tenantName, 
-                'subtotal' => 0, 
-                'lines' => []
+                'tenant_id' => $line->tenantId,
+                'tenant_name' => $line->tenantName,
+                'subtotal' => 0,
+                'lines' => [],
             ];
             $groups[$line->tenantId]['lines'][] = $line;
             $groups[$line->tenantId]['subtotal'] += $line->available ? $line->lineTotal : 0;
         }
+
         return array_values($groups);
     }
 
@@ -46,6 +48,6 @@ final readonly class CartView
 
     public function isOrderable(): bool
     {
-        return !$this->isEmpty() && !$this->hasBlockingIssues;
+        return ! $this->isEmpty() && ! $this->hasBlockingIssues;
     }
 }

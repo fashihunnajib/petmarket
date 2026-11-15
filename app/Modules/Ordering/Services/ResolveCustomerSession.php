@@ -10,7 +10,7 @@ class ResolveCustomerSession
     public function current(Request $request): ?CustomerSession
     {
         $token = $request->cookie('session_token') ?? $request->bearerToken();
-        if (!$token) {
+        if (! is_string($token) || $token === '') {
             return null;
         }
 

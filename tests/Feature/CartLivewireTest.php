@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\CustomerSession;
 use App\Models\Product;
-use App\Modules\Ordering\Services\CartService;
 use App\Modules\Ordering\Services\ResolveCustomerSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -18,19 +17,22 @@ class CartLivewireTest extends TestCase
 
     private function makeCustomerSession(): CustomerSession
     {
-        $session = new CustomerSession();
+        $session = new CustomerSession;
         $session->forceFill([
-            'session_token_hash' => hash('sha256', 'token-' . uniqid('', true)),
+            'session_token_hash' => hash('sha256', 'token-'.uniqid('', true)),
             'status' => 'active',
             'expires_at' => now()->addHours(4),
         ])->save();
+
         return $session;
     }
 
     private function bindSession(?CustomerSession $session): void
     {
-        $this->app->instance(ResolveCustomerSession::class, new class($session) extends ResolveCustomerSession {
+        $this->app->instance(ResolveCustomerSession::class, new class($session) extends ResolveCustomerSession
+        {
             public function __construct(private ?CustomerSession $stub) {}
+
             public function current(Request $request): ?CustomerSession
             {
                 return $this->stub;
@@ -41,7 +43,7 @@ class CartLivewireTest extends TestCase
     protected function tearDown(): void
     {
         foreach (CustomerSession::query()->pluck('id') as $id) {
-            Redis::del('cart:' . $id);
+            Redis::del('cart:'.$id);
         }
         parent::tearDown();
     }
@@ -66,6 +68,6 @@ class CartLivewireTest extends TestCase
             ->assertSee($product->name)
             ->assertSee('15.000');
 
-        $this->assertSame(1, Redis::exists('cart:' . $session->id));
+        $this->assertSame(1, Redis::exists('cart:'.$session->id));
     }
 }

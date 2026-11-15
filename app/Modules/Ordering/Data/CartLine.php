@@ -1,11 +1,12 @@
 <?php
+
 namespace App\Modules\Ordering\Data;
 
 final readonly class CartLine
 {
     /**
-     * @param list<array{id: int, name: string, price_delta: int}> $modifiers
-     * @param list<string> $issues
+     * @param  list<array{id: int, name: string, price_delta: int}>  $modifiers
+     * @param  list<string>  $issues
      */
     public function __construct(
         public string $lineKey,

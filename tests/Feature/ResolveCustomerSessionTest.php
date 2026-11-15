@@ -17,7 +17,7 @@ class ResolveCustomerSessionTest extends TestCase
         $plainToken = Str::random(32);
         $hash = hash('sha256', $plainToken);
 
-        $session = new CustomerSession();
+        $session = new CustomerSession;
         $session->forceFill([
             'session_token_hash' => $hash,
             'status' => $status,

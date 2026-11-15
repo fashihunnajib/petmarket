@@ -8,23 +8,33 @@ use App\Modules\Ordering\Data\CartLine;
 use App\Modules\Ordering\Data\CartView;
 use App\Modules\Ordering\Exceptions\CartException;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Redis;
 
 final class CartService
 {
     private const KEY_PREFIX = 'cart:';
+
     private const MAX_QTY_PER_LINE = 20;
+
     private const MAX_LINES = 50;
-    private const FALLBACK_TTL_SECONDS = 14400; // 4 jam
+
+    private const FALLBACK_TTL_SECONDS = 14400;
+
     public const NOTE_MAX_LENGTH = 200;
 
+    /**
+     * @param  array<int, int>  $optionIds
+     */
     public function add(CustomerSession $session, int $productId, int $quantity = 1, array $optionIds = [], ?string $note = null): void
     {
         if ($quantity < 1) {
             throw CartException::invalidQuantity();
         }
 
+        /** @var Product|null $product */
         $product = Product::query()
+            ->with('tenant')
             ->where('id', $productId)
             ->where('is_available', true)
             ->where('stock_qty', '>', 0)
@@ -41,14 +51,15 @@ final class CartService
         $existingQty = isset($items[$lineKey]) ? (int) $items[$lineKey]['quantity'] : 0;
         $newQty = min($existingQty + $quantity, self::MAX_QTY_PER_LINE);
 
-        if (!isset($items[$lineKey]) && count($items) >= self::MAX_LINES) {
+        if (! isset($items[$lineKey]) && count($items) >= self::MAX_LINES) {
             throw CartException::tooManyLines();
         }
 
         $items[$lineKey] = [
             'line_key' => $lineKey,
             'product_id' => $product->id,
-            'tenant_id' => $product->tenant_id ?? null,
+            'tenant_id' => $product->tenant_id ?? 0,
+            'tenant_name' => (string) ($product->tenant->name ?? 'Tenant'),
             'quantity' => $newQty,
             'option_ids' => $optionIds,
             'note' => $cleanNote,
@@ -59,19 +70,25 @@ final class CartService
         $this->persist($session, $items);
     }
 
+    /**
+     * @param  array<int, int>  $optionIds
+     */
     private function lineKey(int $productId, array $optionIds, ?string $note = null): string
     {
-        return substr(hash('sha256', $productId . '|' . implode(',', $optionIds) . '|' . ($note ?? '')), 0, 24);
+        return substr(hash('sha256', $productId.'|'.implode(',', $optionIds).'|'.($note ?? '')), 0, 24);
     }
 
+    /**
+     * @return array<string, array<string, mixed>>
+     */
     private function load(CustomerSession $session): array
     {
         $raw = Redis::get($this->key($session));
-        if (!is_string($raw) || $raw === '') {
+        if (! is_string($raw) || $raw === '') {
             return [];
         }
         $decoded = json_decode($raw, true);
-        if (!is_array($decoded) || !isset($decoded['items']) || !is_array($decoded['items'])) {
+        if (! is_array($decoded) || ! isset($decoded['items']) || ! is_array($decoded['items'])) {
             return [];
         }
         $items = [];
@@ -80,13 +97,18 @@ final class CartService
                 $items[(string) $item['line_key']] = $item;
             }
         }
+
         return $items;
     }
 
+    /**
+     * @param  array<string, array<string, mixed>>  $items
+     */
     private function persist(CustomerSession $session, array $items): void
     {
         if ($items === []) {
             Redis::del($this->key($session));
+
             return;
         }
         $payload = json_encode(['items' => array_values($items)], JSON_THROW_ON_ERROR);
@@ -101,12 +123,13 @@ final class CartService
                 return (int) $remaining;
             }
         }
+
         return self::FALLBACK_TTL_SECONDS;
     }
 
     private function key(CustomerSession $session): string
     {
-        return self::KEY_PREFIX . $session->getKey();
+        return self::KEY_PREFIX.$session->getKey();
     }
 
     private function sanitizeNote(?string $note): ?string
@@ -118,12 +141,16 @@ final class CartService
         if (mb_strlen($clean) > self::NOTE_MAX_LENGTH) {
             throw CartException::noteTooLong(self::NOTE_MAX_LENGTH);
         }
+
         return $clean === '' ? null : $clean;
     }
 
+    /**
+     * @return Collection<int, Model>
+     */
     public function modifierGroupsFor(CustomerSession $session, int $productId): Collection
     {
-        return new Collection();
+        return new Collection;
     }
 
     public function view(CustomerSession $session): CartView
@@ -135,41 +162,47 @@ final class CartService
         $hasBlockingIssues = false;
 
         foreach ($items as $item) {
-            $product = Product::find($item['product_id']);
-            $available = $product !== null && $product->is_available && $product->stock_qty >= $item['quantity'];
+            /** @var Product|null $product */
+            $product = Product::query()->with('tenant')->where('id', $item['product_id'])->first();
+            $qty = (int) $item['quantity'];
+
+            $available = $product !== null && $product->is_available && $product->stock_qty >= $qty;
             $issues = [];
-            if ($product === null || !$product->is_available) {
+            if ($product === null || ! $product->is_available) {
                 $issues[] = 'product_unavailable';
-            } elseif ($product->stock_qty < $item['quantity']) {
+            } elseif ($product->stock_qty < $qty) {
                 $issues[] = 'insufficient_stock';
             }
 
-            $unitPrice = $product ? (int) $product->base_price : (int) $item['price_at_add'];
-            $lineTotal = $unitPrice * (int) $item['quantity'];
+            $unitPrice = $product !== null ? (int) $product->base_price : (int) $item['price_at_add'];
+            $modifierTotal = 0;
+            $lineTotal = ($unitPrice + $modifierTotal) * $qty;
 
-            if (!$available) {
+            if (! $available) {
                 $hasBlockingIssues = true;
             } else {
                 $subtotal += $lineTotal;
             }
 
-            $totalQty += (int) $item['quantity'];
+            $totalQty += $qty;
 
-          $lines[] = new CartLine(
-                lineKey: $item['line_key'],
+            $tenantName = $item['tenant_name'] ?? ($product !== null && $product->tenant !== null ? $product->tenant->name : 'Tenant');
+
+            $lines[] = new CartLine(
+                lineKey: (string) $item['line_key'],
                 menuId: (int) $item['product_id'],
                 tenantId: (int) ($item['tenant_id'] ?? 0),
-                tenantName: (string) ($item['tenant_name'] ?? $product?->tenant?->display_name ?? $product?->tenant?->name ?? 'Tenant'),
+                tenantName: (string) $tenantName,
                 name: (string) $item['name_at_add'],
-                quantity: (int) $item['quantity'],
+                quantity: $qty,
                 unitPrice: $unitPrice,
                 priceAtAdd: (int) $item['price_at_add'],
-                modifiers: $item['option_ids'] ?? [],
-                modifierTotal: 0,
+                modifiers: [],
+                modifierTotal: $modifierTotal,
                 lineTotal: $lineTotal,
                 available: $available,
                 issues: $issues,
-                note: $item['note'] ?? null,
+                note: isset($item['note']) ? (string) $item['note'] : null,
             );
         }
 
@@ -189,7 +222,7 @@ final class CartService
     public function setQuantity(CustomerSession $session, string $lineKey, int $quantity): void
     {
         $items = $this->load($session);
-        if (!isset($items[$lineKey])) {
+        if (! isset($items[$lineKey])) {
             return;
         }
 

@@ -1,11 +1,11 @@
 <?php
-use App\Models\Product;
 use App\Models\ModifierGroup;
 use App\Models\ModifierOption;
 use App\Models\Tenant;
 use App\Models\UserTenantRole;
 use App\Modules\Admin\Services\AuditLogger;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -13,10 +13,15 @@ use Livewire\Component;
 new class extends Component
 {
     public int $tenantId = 0;
+
     public string $groupName = '';
+
     public int $minSelect = 0;
+
     public int $maxSelect = 1;
+
     public array $optionName = [];
+
     public array $optionPrice = [];
 
     public function mount(int $tenantId): void
@@ -36,13 +41,13 @@ new class extends Component
     }
 
     #[Computed]
-    public function groups(): \Illuminate\Database\Eloquent\Collection
+    public function groups(): Collection
     {
         return ModifierGroup::query()->with(['options' => fn ($query) => $query->orderBy('price_delta')->orderBy('id')])->orderBy('name')->get();
     }
 
     #[Computed]
-    public function menus(): \Illuminate\Database\Eloquent\Collection
+    public function menus(): Collection
     {
         return Menu::query()->with('modifierGroups:id')->orderBy('name')->get();
     }
@@ -74,7 +79,7 @@ new class extends Component
             "optionPrice.{$groupId}" => ['required', 'integer', 'min:0', 'max:1000000'],
         ], [], ["optionName.{$groupId}" => 'nama opsi', "optionPrice.{$groupId}" => 'selisih harga']);
 
-        $option = new ModifierOption();
+        $option = new ModifierOption;
         $option->forceFill([
             'group_id' => $group->id,
             'name' => $this->optionName[$groupId],

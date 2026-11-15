@@ -20,19 +20,20 @@ class CartServiceTest extends TestCase
 
     private function makeCustomerSession(): CustomerSession
     {
-        $session = new CustomerSession();
+        $session = new CustomerSession;
         $session->forceFill([
-            'session_token_hash' => hash('sha256', 'token-' . uniqid('', true)),
+            'session_token_hash' => hash('sha256', 'token-'.uniqid('', true)),
             'status' => 'active',
             'expires_at' => now()->addHours(4),
         ])->save();
+
         return $session;
     }
 
     protected function tearDown(): void
     {
         foreach (CustomerSession::query()->pluck('id') as $id) {
-            Redis::del('cart:' . $id);
+            Redis::del('cart:'.$id);
         }
         parent::tearDown();
     }
@@ -45,7 +46,7 @@ class CartServiceTest extends TestCase
         $this->cart()->add($session, $product->id, 2);
         $this->cart()->add($session, $product->id, 3);
 
-        $this->assertSame(1, Redis::exists('cart:' . $session->id));
+        $this->assertSame(1, Redis::exists('cart:'.$session->id));
         $view = $this->cart()->view($session);
         $this->assertCount(1, $view->lines);
         $this->assertSame(5, $view->lines[0]->quantity);
