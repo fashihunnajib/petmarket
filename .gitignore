@@ -24,6 +24,8 @@ yarn-error.log
 /.zed
 .env.testing
 .DS_Store
+export-context.ps1
+laravel_context.txt
 /.agents
 /.amp
 /.claude

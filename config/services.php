@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    // Gateway QRIS (UC-07). Masa berlaku maksimal 15 menit (900 detik).
+    'qris' => [
+        'expiry_seconds' => (int) env('QRIS_EXPIRY_SECONDS', 900),
+        'merchant_nmid' => env('QRIS_MERCHANT_NMID', 'ID1020008821'),
+        'fake_unavailable' => (bool) env('QRIS_FAKE_UNAVAILABLE', false),
+    ],
+
 ];
