@@ -79,10 +79,86 @@ class TenantOrderController extends Controller
                 ->with('error', 'Pesanan yang sudah selesai atau dibatalkan tidak dapat diubah statusnya.');
         }
 
+        $order->loadMissing('items');
+
         DB::transaction(function () use ($tenant, $order, $previousStatus, $newStatus): void {
             $order->update(['status' => $newStatus]);
 
-            // Cairkan pendapatan bersih (net_amount) ke saldo toko saat pesanan selesai
+            // 1. Potong stok produk saat pesanan diproses/dikirim/selesai (idempoten via product_stock_movements)
+            if (in_array($newStatus, ['processing', 'in_transit', 'completed'], true) && Schema::hasTable('product_stock_movements')) {
+                foreach ($order->items as $item) {
+                    $saleKey = 'order_item_'.$item->id.'_sale';
+                    $alreadyDeducted = DB::table('product_stock_movements')
+                        ->where('idempotency_key', $saleKey)
+                        ->exists();
+
+                    if (! $alreadyDeducted) {
+                        $qty = (int) $item->quantity;
+
+                        DB::table('product_stock_movements')->insert([
+                            'tenant_id' => $tenant->id,
+                            'product_id' => $item->product_id,
+                            'order_item_id' => $item->id,
+                            'idempotency_key' => $saleKey,
+                            'type' => 'sale',
+                            'quantity_delta' => -$qty,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+
+                        $currentStock = (int) DB::table('products')
+                            ->where('tenant_id', $tenant->id)
+                            ->where('id', $item->product_id)
+                            ->value('stock_qty');
+
+                        DB::table('products')
+                            ->where('tenant_id', $tenant->id)
+                            ->where('id', $item->product_id)
+                            ->update([
+                                'stock_qty' => max(0, $currentStock - $qty),
+                                'updated_at' => now(),
+                            ]);
+                    }
+                }
+            }
+
+            // 2. Kembalikan stok jika pesanan dibatalkan setelah stok terpotong
+            if ($newStatus === 'cancelled' && Schema::hasTable('product_stock_movements')) {
+                foreach ($order->items as $item) {
+                    $saleKey = 'order_item_'.$item->id.'_sale';
+                    $restockKey = 'order_item_'.$item->id.'_restock';
+
+                    $wasDeducted = DB::table('product_stock_movements')
+                        ->where('idempotency_key', $saleKey)
+                        ->exists();
+
+                    $alreadyRestocked = DB::table('product_stock_movements')
+                        ->where('idempotency_key', $restockKey)
+                        ->exists();
+
+                    if ($wasDeducted && ! $alreadyRestocked) {
+                        $qty = (int) $item->quantity;
+
+                        DB::table('product_stock_movements')->insert([
+                            'tenant_id' => $tenant->id,
+                            'product_id' => $item->product_id,
+                            'order_item_id' => $item->id,
+                            'idempotency_key' => $restockKey,
+                            'type' => 'restock',
+                            'quantity_delta' => $qty,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+
+                        DB::table('products')
+                            ->where('tenant_id', $tenant->id)
+                            ->where('id', $item->product_id)
+                            ->increment('stock_qty', $qty, ['updated_at' => now()]);
+                    }
+                }
+            }
+
+            // 3. Cairkan pendapatan bersih (net_amount) ke saldo toko saat pesanan selesai
             if ($previousStatus !== 'completed' && $newStatus === 'completed' && Schema::hasTable('tenant_balances')) {
                 $balance = DB::table('tenant_balances')->where('tenant_id', $tenant->id)->first();
                 $netAmount = (int) $order->net_amount;

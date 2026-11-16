@@ -23,67 +23,97 @@
         </div>
     </div>
 
-    <!-- 1. 4 CARD KPI STATISTIK -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-        <!-- Card 1: Total Pesanan -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-            <div>
-                <span class="text-xs font-semibold text-slate-400">Total Pesanan</span>
-                <h3 class="text-2xl font-bold text-slate-800 mt-1">{{ number_format($totalOrders) }}</h3>
-                <p class="mt-1 text-xs font-medium {{ $totalOrders > 0 ? 'text-emerald-600' : 'text-gray-400' }}">
-                    {{ $totalOrders > 0 ? $totalOrders . ' pesanan tercatat' : 'Belum ada pesanan masuk' }}
-                </p>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl font-bold shrink-0">🛒</div>
-        </div>
-
-        <!-- Card 2: Pendapatan Hari Ini -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-            <div>
+    <!-- 1. RINGKASAN KEUANGAN (1 CARD, 3 KOLOM KONSISTEN) -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm mb-6 grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+        <!-- Kolom 1: Pendapatan Hari Ini -->
+        <div class="p-6 flex flex-col justify-between">
+            <div class="flex items-center justify-between gap-3">
                 <span class="text-xs font-semibold text-slate-400">Pendapatan Hari Ini</span>
-                <h3 class="text-2xl font-bold text-slate-800 mt-1">Rp {{ number_format($incomeToday, 0, ',', '.') }}</h3>
-                <p class="mt-1 text-xs font-medium {{ $incomeToday > 0 ? 'text-emerald-600' : 'text-gray-400' }}">
-                    {{ $incomeToday > 0 ? '↑ Pemasukan aktif hari ini' : 'Belum ada transaksi hari ini' }}
-                </p>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-lg font-bold shrink-0">
+                    💲
+                </div>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl font-bold shrink-0">💲</div>
+            <div class="my-3">
+                <h3 class="text-2xl font-bold text-slate-800 whitespace-nowrap">
+                    Rp {{ number_format($incomeToday, 0, ',', '.') }}
+                </h3>
+            </div>
+            <p class="text-xs font-medium {{ $incomeToday > 0 ? 'text-emerald-600' : 'text-slate-400' }}">
+                {{ $incomeToday > 0 ? '↑ Pemasukan bersih aktif hari ini' : 'Belum ada transaksi selesai hari ini' }}
+            </p>
         </div>
 
-        <!-- Card 3: Saldo Toko -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
-            <div class="flex items-center justify-between gap-2">
-                <div>
-                    <span class="text-xs font-semibold text-slate-400">Saldo Toko</span>
-                    <h3 class="text-2xl font-bold text-slate-800 mt-1">
-                        Rp {{ number_format($storeBalance ?? 0, 0, ',', '.') }}
-                    </h3>
+        <!-- Kolom 2: Total Pendapatan Kotor -->
+        <div class="p-6 flex flex-col justify-between">
+            <div class="flex items-center justify-between gap-3">
+                <span class="text-xs font-semibold text-slate-400">Total Pendapatan Kotor</span>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-lg font-bold shrink-0">
+                    💰
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl font-bold shrink-0">
+            </div>
+            <div class="my-3">
+                <h3 class="text-2xl font-bold text-slate-800 whitespace-nowrap">
+                    Rp {{ number_format($totalGrossRevenue ?? 0, 0, ',', '.') }}
+                </h3>
+            </div>
+            <p class="text-xs font-medium text-slate-400">
+                Akumulasi tagihan dari seluruh pesanan selesai
+            </p>
+        </div>
+
+        <!-- Kolom 3: Saldo Toko -->
+        <div class="p-6 flex flex-col justify-between">
+            <div class="flex items-center justify-between gap-3">
+                <span class="text-xs font-semibold text-slate-400">Saldo Toko Tersedia</span>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-lg font-bold shrink-0">
                     👛
                 </div>
             </div>
-
-            <div class="mt-4">
+            <div class="my-3">
+                <h3 class="text-2xl font-bold text-slate-800 whitespace-nowrap">
+                    Rp {{ number_format($storeBalance ?? 0, 0, ',', '.') }}
+                </h3>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-xs text-slate-400">Siap dicairkan</span>
                 <a href="{{ route('tenant.withdrawals.index', ['tenant' => $tenantSlug]) }}"
-                   class="inline-flex items-center justify-center px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs rounded-xl shadow-sm transition-all active:scale-95">
+                   class="inline-flex items-center justify-center px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs rounded-lg shadow-sm transition-all active:scale-95">
                     Tarik Dana
                 </a>
             </div>
         </div>
+    </div>
 
-        <!-- Card 4: Produk Aktif -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+    <!-- 2. STATISTIK OPERASIONAL TOKO -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+        <!-- Card: Total Pesanan -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between gap-4">
+            <div>
+                <span class="text-xs font-semibold text-slate-400">Total Pesanan</span>
+                <h3 class="text-2xl font-bold text-slate-800 mt-1">{{ number_format($totalOrders) }}</h3>
+                <p class="mt-1 text-xs font-medium {{ $totalOrders > 0 ? 'text-emerald-600' : 'text-slate-400' }}">
+                    {{ $totalOrders > 0 ? $totalOrders . ' pesanan tercatat' : 'Belum ada pesanan masuk' }}
+                </p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl font-bold shrink-0">
+                🛒
+            </div>
+        </div>
+
+        <!-- Card: Produk Aktif -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between gap-4">
             <div>
                 <span class="text-xs font-semibold text-slate-400">Produk Aktif</span>
                 <h3 class="text-2xl font-bold text-slate-800 mt-1">{{ number_format($activeProductsCount) }}</h3>
-                <p class="mt-1 text-xs font-medium {{ $activeProductsCount > 0 ? 'text-emerald-600' : 'text-gray-400' }}">
+                <p class="mt-1 text-xs font-medium {{ $activeProductsCount > 0 ? 'text-emerald-600' : 'text-slate-400' }}">
                     {{ $activeProductsCount > 0 ? $activeProductsCount . ' produk siap dijual' : 'Belum ada produk aktif' }}
                 </p>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl font-bold shrink-0">📦</div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl font-bold shrink-0">
+                📦
+            </div>
         </div>
     </div>
-
     <!-- 2. TABEL PESANAN TERBARU & GRAFIK -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Tabel Pesanan Terbaru -->
@@ -215,8 +245,14 @@
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    return 'Rp ' + value.toLocaleString('id-ID');
-                                },
+    if (value >= 1000000000) {
+        return 'Rp ' + (value / 1000000000).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' M';
+    }
+    if (value >= 1000000) {
+        return 'Rp ' + (value / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' Jt';
+    }
+    return 'Rp ' + value.toLocaleString('id-ID');
+},
                                 font: { size: 10 }
                             },
                             grid: { borderDash: [4, 4] }

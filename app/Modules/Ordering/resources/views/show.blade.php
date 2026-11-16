@@ -3,6 +3,15 @@
         $tenantSlug = $tenant->slug ?? $tenant->id;
         $customerName = $order->customer_snapshot['name'] ?? $order->user?->name ?? 'Pelanggan';
         $customerPhone = $order->customer_snapshot['phone'] ?? '-';
+        $statusMeta = [
+            'pending_payment' => ['Menunggu Pembayaran', 'bg-amber-100 text-amber-700'],
+            'new_order' => ['Pesanan Baru', 'bg-emerald-100 text-emerald-700'],
+            'processing' => ['Sedang Diproses', 'bg-blue-100 text-blue-700'],
+            'in_transit' => ['Dikirim (Dalam Perjalanan)', 'bg-indigo-100 text-indigo-700'],
+            'completed' => ['Selesai', 'bg-slate-100 text-slate-700'],
+            'cancelled' => ['Dibatalkan', 'bg-red-100 text-red-700'],
+            'expired' => ['Kedaluwarsa', 'bg-red-100 text-red-700'],
+        ][$order->status] ?? [ucfirst(str_replace('_', ' ', $order->status)), 'bg-slate-100 text-slate-700'];
     @endphp
 
     <div class="space-y-6">
@@ -129,8 +138,10 @@
 
                 <div class="space-y-3 text-sm">
                     <div>
-                        <span class="text-xs text-slate-400 block">Status Saat Ini</span>
-                        <span class="font-semibold text-slate-900 uppercase">{{ str_replace('_', ' ', $order->status) }}</span>
+                        <span class="text-xs text-slate-400 block mb-1">Status Saat Ini</span>
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusMeta[1] }}">
+                            {{ $statusMeta[0] }}
+                        </span>
                     </div>
                     <div>
                         <span class="text-xs text-slate-400 block">Nama Pembeli</span>

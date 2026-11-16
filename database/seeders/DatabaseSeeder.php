@@ -25,6 +25,8 @@ class DatabaseSeeder extends Seeder
         $demo = [
             ['name' => 'Admin PetMarket', 'email' => 'admin@petmarket.test', 'role' => 'admin', 'address' => null, 'phone_e164' => '+6281234567890', 'latitude' => null, 'longitude' => null],
             ['name' => 'Operator Tenant', 'email' => 'tenant@petmarket.test', 'role' => 'tenant', 'address' => 'Jl. Raya Tenant No. 1', 'phone_e164' => '+6281234567891', 'latitude' => -6.900000, 'longitude' => 107.600000],
+            ['name' => 'Pet Owner', 'email' => 'petonar@petmarket.test', 'role' => 'customer', 'address' => 'Jl. Raya Banyuwangi No. 10', 'phone_e164' => '+6281234567892', 'latitude' => -8.219200, 'longitude' => 114.369100],
+        
         ];
 
         foreach ($demo as $row) {
