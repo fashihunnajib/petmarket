@@ -278,5 +278,15 @@ class DemoShopSeeder extends Seeder
                 'role' => 'operator',
             ]);
         }
+
+        // Operator demo -> tenant PAW (peran operator).
+        $petonar = User::where('email', 'petonar@petmarket.test')->first();
+        if ($petonar !== null) {
+            UserTenantRole::firstOrCreate([
+                'user_id' => $petonar->id,
+                'tenant_id' => $tenants['PAW']->id,
+                'role' => 'operator',
+            ]);
+        }
     }
 }
