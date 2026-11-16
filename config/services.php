@@ -42,4 +42,11 @@ return [
         'fake_unavailable' => (bool) env('QRIS_FAKE_UNAVAILABLE', false),
     ],
 
+    'payout' => [
+        'driver' => env('PAYOUT_DRIVER', 'sandbox'),
+        'base_url' => env('PAYOUT_BASE_URL', 'https://api.xendit.co'),
+        'secret_key' => env('PAYOUT_SECRET_KEY', ''),
+        'webhook_token' => env('PAYOUT_WEBHOOK_TOKEN', 'petmarket-payout-webhook-secret'),
+    ],
+
 ];

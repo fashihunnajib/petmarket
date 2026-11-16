@@ -25,6 +25,7 @@ PortalRoutes::admin(function (): void {
     Route::get('/withdrawals', [WithdrawalController::class, 'index'])->name('withdrawals.index');
     Route::post('/withdrawals/{withdrawal}/approve', [WithdrawalController::class, 'approve'])->name('withdrawals.approve');
     Route::post('/withdrawals/{withdrawal}/reject', [WithdrawalController::class, 'reject'])->name('withdrawals.reject');
+    Route::post('/withdrawals/{withdrawal}/webhook-simulate', [WithdrawalController::class, 'simulateWebhook'])->name('withdrawals.webhook-simulate');
 
     // Rute Pengaturan
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
