@@ -43,3 +43,7 @@ Route::get('/balance', [WithdrawalController::class, 'balance'])->name('balance.
 Route::get('/withdrawals', [WithdrawalController::class, 'index'])->name('withdrawals.index');
 Route::post('/withdrawals', [WithdrawalController::class, 'store'])->name('withdrawals.store');
 Route::post('/bank-accounts', [WithdrawalController::class, 'storeBankAccount'])->name('bank-accounts.store');
+Route::patch('/bank-accounts/{bankAccount}/primary', [WithdrawalController::class, 'setPrimaryBankAccount'])
+    ->name('bank-accounts.primary');
+Route::delete('/bank-accounts/{bankAccount}', [WithdrawalController::class, 'destroyBankAccount'])
+    ->name('bank-accounts.destroy');

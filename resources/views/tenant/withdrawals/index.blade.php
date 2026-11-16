@@ -153,13 +153,33 @@
                 <div class="space-y-2">
                     @foreach($bankAccounts as $bank)
                         <div class="p-3 rounded-xl border {{ $bank->is_primary ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-slate-50/50' }} text-xs">
-                            <div class="flex items-center justify-between">
+                            <div class="flex items-center justify-between gap-2">
                                 <span class="font-bold text-slate-800">{{ $bank->bank_code }} • •••• {{ $bank->account_last4 }}</span>
                                 @if($bank->is_primary)
                                     <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-semibold">Utama</span>
                                 @endif
                             </div>
                             <span class="text-[11px] text-slate-500 block mt-0.5">{{ $bank->account_holder }}</span>
+
+                            <div class="flex items-center gap-3 mt-2 pt-2 border-t border-slate-200/70">
+                                @if(! $bank->is_primary)
+                                    <form method="POST" action="{{ route('tenant.bank-accounts.primary', ['tenant' => $tenantSlug, 'bankAccount' => $bank->id]) }}" class="inline">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="text-[11px] font-semibold text-emerald-600 hover:underline">
+                                            Jadikan Utama
+                                        </button>
+                                    </form>
+                                @endif
+
+                                <form method="POST" action="{{ route('tenant.bank-accounts.destroy', ['tenant' => $tenantSlug, 'bankAccount' => $bank->id]) }}" onsubmit="return confirm('Hapus rekening {{ $bank->bank_code }} (•••• {{ $bank->account_last4 }})?');" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-[11px] font-semibold text-red-600 hover:underline">
+                                        Hapus
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     @endforeach
                 </div>
@@ -239,6 +259,7 @@
                         @php
                             $badge = match ($item->status) {
                                 'pending', 'requested' => ['Menunggu Persetujuan', 'bg-amber-100 text-amber-700'],
+                                'processing' => ['Diproses Bank', 'bg-blue-100 text-blue-700'],
                                 'approved', 'paid' => ['Disetujui', 'bg-emerald-100 text-emerald-700'],
                                 'rejected' => ['Ditolak', 'bg-red-100 text-red-700'],
                                 default => [ucfirst((string) $item->status), 'bg-slate-100 text-slate-700'],

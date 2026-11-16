@@ -79,6 +79,7 @@ class WithdrawalController extends Controller
 
         $bankAccounts = DB::table('tenant_bank_accounts')
             ->where('tenant_id', $tenant->id)
+            ->where('status', '!=', 'inactive')
             ->orderByDesc('is_primary')
             ->orderByDesc('id')
             ->get();
@@ -97,7 +98,7 @@ class WithdrawalController extends Controller
 
         $hasActiveWithdrawal = DB::table('withdrawals')
             ->where('tenant_id', $tenant->id)
-            ->whereIn('status', ['pending', 'requested', 'approved', 'processing'])
+            ->whereIn('status', ['pending', 'requested', 'processing'])
             ->exists();
 
         $minWithdrawal = self::MIN_WITHDRAWAL_AMOUNT;
@@ -131,7 +132,34 @@ class WithdrawalController extends Controller
         $accountNumber = is_string($validated['account_number']) ? $validated['account_number'] : '';
         $bankCode = is_string($validated['bank_code']) ? strtoupper($validated['bank_code']) : '';
         $accountHolder = is_string($validated['account_holder']) ? trim($validated['account_holder']) : '';
-        $hasExisting = DB::table('tenant_bank_accounts')->where('tenant_id', $tenant->id)->exists();
+
+        $alreadyExists = DB::table('tenant_bank_accounts')
+            ->where('tenant_id', $tenant->id)
+            ->where('status', '!=', 'inactive')
+            ->where('bank_code', $bankCode)
+            ->where('account_last4', substr($accountNumber, -4))
+            ->get()
+            ->contains(function (object $row) use ($accountNumber): bool {
+                try {
+                    $cipher = is_string($row->account_number_cipher ?? null) ? $row->account_number_cipher : '';
+
+                    return $cipher !== '' && Crypt::decryptString($cipher) === $accountNumber;
+                } catch (\Throwable) {
+                    return false;
+                }
+            });
+
+        if ($alreadyExists) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', "Rekening {$bankCode} dengan nomor tersebut sudah terdaftar.");
+        }
+
+        $hasExisting = DB::table('tenant_bank_accounts')
+            ->where('tenant_id', $tenant->id)
+            ->where('status', '!=', 'inactive')
+            ->exists();
         $isPrimary = ! $hasExisting || (bool) ($validated['is_primary'] ?? false);
 
         DB::transaction(function () use ($tenant, $bankCode, $accountNumber, $accountHolder, $isPrimary): void {
@@ -163,18 +191,117 @@ class WithdrawalController extends Controller
             ->with('success', "Rekening {$bankCode} (•••• ".substr($accountNumber, -4).') berhasil ditambahkan.');
     }
 
+    public function setPrimaryBankAccount(Tenant $tenant, int $bankAccount): RedirectResponse
+    {
+        $exists = DB::table('tenant_bank_accounts')
+            ->where('id', $bankAccount)
+            ->where('tenant_id', $tenant->id)
+            ->exists();
+
+        if (! $exists) {
+            return redirect()
+                ->back()
+                ->with('error', 'Rekening bank tidak ditemukan.');
+        }
+
+        DB::transaction(function () use ($tenant, $bankAccount): void {
+            DB::table('tenant_bank_accounts')
+                ->where('tenant_id', $tenant->id)
+                ->update([
+                    'is_primary' => false,
+                    'updated_at' => now(),
+                ]);
+
+            DB::table('tenant_bank_accounts')
+                ->where('id', $bankAccount)
+                ->where('tenant_id', $tenant->id)
+                ->update([
+                    'is_primary' => true,
+                    'updated_at' => now(),
+                ]);
+        });
+
+        return redirect()
+            ->route('tenant.withdrawals.index', ['tenant' => $tenant->slug ?? $tenant->id])
+            ->with('success', 'Rekening utama berhasil diperbarui.');
+    }
+
+    public function destroyBankAccount(Tenant $tenant, int $bankAccount): RedirectResponse
+    {
+        $account = DB::table('tenant_bank_accounts')
+            ->where('id', $bankAccount)
+            ->where('tenant_id', $tenant->id)
+            ->where('status', '!=', 'inactive')
+            ->first();
+
+        if ($account === null) {
+            return redirect()
+                ->back()
+                ->with('error', 'Rekening bank tidak ditemukan.');
+        }
+
+        $usedInWithdrawal = DB::table('withdrawals')
+            ->where('bank_account_id', $bankAccount)
+            ->exists();
+
+        DB::transaction(function () use ($tenant, $bankAccount, $account, $usedInWithdrawal): void {
+            if ($usedInWithdrawal) {
+                DB::table('tenant_bank_accounts')
+                    ->where('id', $bankAccount)
+                    ->where('tenant_id', $tenant->id)
+                    ->update([
+                        'status' => 'inactive',
+                        'is_primary' => false,
+                        'updated_at' => now(),
+                    ]);
+            } else {
+                DB::table('tenant_bank_accounts')
+                    ->where('id', $bankAccount)
+                    ->where('tenant_id', $tenant->id)
+                    ->delete();
+            }
+
+            if ((bool) $account->is_primary) {
+                $nextPrimary = DB::table('tenant_bank_accounts')
+                    ->where('tenant_id', $tenant->id)
+                    ->where('status', '!=', 'inactive')
+                    ->orderByDesc('id')
+                    ->first();
+
+                if ($nextPrimary !== null) {
+                    DB::table('tenant_bank_accounts')
+                        ->where('id', $nextPrimary->id)
+                        ->update([
+                            'is_primary' => true,
+                            'updated_at' => now(),
+                        ]);
+                }
+            }
+        });
+
+        $message = $usedInWithdrawal
+            ? 'Rekening bank dihapus dari daftar aktif (tetap disimpan di sistem untuk riwayat transaksi).'
+            : 'Rekening bank berhasil dihapus.';
+
+        return redirect()
+            ->route('tenant.withdrawals.index', ['tenant' => $tenant->slug ?? $tenant->id])
+            ->with('success', $message);
+    }
+
     public function store(Request $request, Tenant $tenant): RedirectResponse
     {
         $validated = $request->validate([
             'bank_account_id' => [
                 'required',
                 'integer',
-                Rule::exists('tenant_bank_accounts', 'id')->where('tenant_id', $tenant->id),
+                Rule::exists('tenant_bank_accounts', 'id')
+                    ->where('tenant_id', $tenant->id)
+                    ->where('status', 'verified'),
             ],
             'amount' => ['required', 'integer', 'min:'.self::MIN_WITHDRAWAL_AMOUNT],
         ], [
             'bank_account_id.required' => 'Pilih rekening bank tujuan pencairan.',
-            'bank_account_id.exists' => 'Rekening bank tidak valid untuk toko ini.',
+            'bank_account_id.exists' => 'Rekening bank tidak valid atau sudah dinonaktifkan.',
             'amount.required' => 'Nominal penarikan wajib diisi.',
             'amount.min' => 'Minimal penarikan dana adalah Rp '.number_format(self::MIN_WITHDRAWAL_AMOUNT, 0, ',', '.').'.',
         ]);
@@ -194,7 +321,7 @@ class WithdrawalController extends Controller
                 ->where('tenant_id', $tenant->id)
                 ->where(function ($query) use ($tenant): void {
                     $query->where('active_tenant_lock', $tenant->id)
-                        ->orWhereIn('status', ['pending', 'requested', 'approved', 'processing']);
+                        ->orWhereIn('status', ['pending', 'requested', 'processing']);
                 })
                 ->lockForUpdate()
                 ->exists();
@@ -221,6 +348,7 @@ class WithdrawalController extends Controller
             $bank = DB::table('tenant_bank_accounts')
                 ->where('id', $bankAccountId)
                 ->where('tenant_id', $tenant->id)
+                ->where('status', 'verified')
                 ->first();
 
             if ($bank === null) {
