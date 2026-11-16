@@ -3,6 +3,8 @@
 use App\Http\Controllers\Tenant\DashboardController;
 use App\Http\Controllers\Tenant\LocationController;
 use App\Http\Controllers\Tenant\ProductController;
+use App\Http\Controllers\Tenant\StoreSettingController;
+use App\Http\Controllers\Tenant\WithdrawalController;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -30,3 +32,18 @@ Route::get('/withdrawals', function () {
 // --- MODUL LOKASI & RADIUS ---
 Route::get('/location', [LocationController::class, 'index'])->name('location.index');
 Route::put('/location', [LocationController::class, 'update'])->name('location.update');
+
+// --- MODUL PENGATURAN TOKO ---
+Route::get('/settings', [StoreSettingController::class, 'index'])->name('settings.index');
+Route::put('/settings', [StoreSettingController::class, 'update'])->name('settings.update');
+Route::patch('/settings/status', [StoreSettingController::class, 'toggleStatus'])->name('settings.toggle-status');
+
+// --- MODUL SALDO & PENARIKAN DANA TENANT ---
+Route::get('/balance', [WithdrawalController::class, 'balance'])->name('balance.index');
+Route::get('/withdrawals', [WithdrawalController::class, 'index'])->name('withdrawals.index');
+Route::post('/withdrawals', [WithdrawalController::class, 'store'])->name('withdrawals.store');
+Route::post('/bank-accounts', [WithdrawalController::class, 'storeBankAccount'])->name('bank-accounts.store');
+Route::patch('/bank-accounts/{bankAccount}/primary', [WithdrawalController::class, 'setPrimaryBankAccount'])
+    ->name('bank-accounts.primary');
+Route::delete('/bank-accounts/{bankAccount}', [WithdrawalController::class, 'destroyBankAccount'])
+    ->name('bank-accounts.destroy');

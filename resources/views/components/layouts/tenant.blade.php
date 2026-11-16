@@ -71,8 +71,8 @@
                     </a>
 
                     <!-- Toko -->
-                    <a href="#" 
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-zinc-400 hover:text-white hover:bg-zinc-800/60">
+                    <a href="{{ route('tenant.settings.index', ['tenant' => $tenantSlug]) }}"
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all {{ request()->routeIs('tenant.settings.*') ? 'bg-emerald-500/10 text-emerald-400 font-semibold border-l-4 border-emerald-500' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m3 0h1m-1-4h.01M9 16h.01M9 12h.01M13 16h.01M13 12h.01"/></svg>
                         <span>Toko</span>
                     </a>
@@ -88,15 +88,15 @@
                     </a>
 
                     <!-- Saldo -->
-                    <a href="#" 
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-zinc-400 hover:text-white hover:bg-zinc-800/60">
+                    <a href="{{ route('tenant.balance.index', ['tenant' => $tenantSlug]) }}"
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all {{ request()->routeIs('tenant.balance.*') ? 'bg-emerald-500/10 text-emerald-400 font-semibold border-l-4 border-emerald-500' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                         <span>Saldo</span>
                     </a>
 
                     <!-- Penarikan Dana -->
-                    <a href="#" 
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-zinc-400 hover:text-white hover:bg-zinc-800/60">
+                    <a href="{{ route('tenant.withdrawals.index', ['tenant' => $tenantSlug]) }}"
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all {{ request()->routeIs('tenant.withdrawals.*') ? 'bg-emerald-500/10 text-emerald-400 font-semibold border-l-4 border-emerald-500' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span>Penarikan Dana</span>
                     </a>
