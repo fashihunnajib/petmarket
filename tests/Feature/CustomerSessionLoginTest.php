@@ -4,11 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\CustomerSession;
 use App\Models\User;
+use App\Modules\Ordering\Services\ResolveCustomerSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
-use Tests\TestCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Str;
+use Tests\TestCase;
 
 class CustomerSessionLoginTest extends TestCase
 {
@@ -91,56 +92,56 @@ class CustomerSessionLoginTest extends TestCase
         $this->assertNull($session->fresh()->user_id);
     }
 
-public function test_customer_login_preserves_guest_cart_session(): void
-{
-    $user = User::factory()->create([
-        'role' => null,
-        'status' => 'active',
-    ]);
-
-    [$session, $plainToken] = $this->makeGuestSession();
-
-    // Simpan contoh data keranjang guest ke Redis.
-    $cartKey = 'cart:'.$session->id;
-
-    $cartData = json_encode([
-        'items' => [
-            'product-1' => [
-                'product_id' => 1,
-                'quantity' => 2,
-            ],
-        ],
-    ]);
-
-    Redis::set($cartKey, $cartData);
-
-    // Customer login menggunakan cookie sesi guest.
-    $this->withCookie('session_token', $plainToken)
-        ->post(route('login.store'), [
-            'email' => $user->email,
-            'password' => 'password',
+    public function test_customer_login_preserves_guest_cart_session(): void
+    {
+        $user = User::factory()->create([
+            'role' => null,
+            'status' => 'active',
         ]);
 
-    // Pastikan sesi yang sama sudah terhubung ke customer.
-    $this->assertSame(
-        $user->id,
-        $session->fresh()->user_id
-    );
+        [$session, $plainToken] = $this->makeGuestSession();
 
-    // Pastikan resolver masih menemukan sesi yang sama.
-    $request = Request::create('/');
-    $request->cookies->set('session_token', $plainToken);
+        // Simpan contoh data keranjang guest ke Redis.
+        $cartKey = 'cart:'.$session->id;
 
-    $resolvedSession = app(
-        \App\Modules\Ordering\Services\ResolveCustomerSession::class
-    )->current($request);
+        $cartData = json_encode([
+            'items' => [
+                'product-1' => [
+                    'product_id' => 1,
+                    'quantity' => 2,
+                ],
+            ],
+        ]);
 
-    $this->assertNotNull($resolvedSession);
-    $this->assertSame($session->id, $resolvedSession->id);
+        Redis::set($cartKey, $cartData);
 
-    // Pastikan data keranjang Redis tetap tersedia.
-    $this->assertSame($cartData, Redis::get($cartKey));
+        // Customer login menggunakan cookie sesi guest.
+        $this->withCookie('session_token', $plainToken)
+            ->post(route('login.store'), [
+                'email' => $user->email,
+                'password' => 'password',
+            ]);
 
-    Redis::del($cartKey);
-}
+        // Pastikan sesi yang sama sudah terhubung ke customer.
+        $this->assertSame(
+            $user->id,
+            $session->fresh()->user_id
+        );
+
+        // Pastikan resolver masih menemukan sesi yang sama.
+        $request = Request::create('/');
+        $request->cookies->set('session_token', $plainToken);
+
+        $resolvedSession = app(
+            ResolveCustomerSession::class
+        )->current($request);
+
+        $this->assertNotNull($resolvedSession);
+        $this->assertSame($session->id, $resolvedSession->id);
+
+        // Pastikan data keranjang Redis tetap tersedia.
+        $this->assertSame($cartData, Redis::get($cartKey));
+
+        Redis::del($cartKey);
+    }
 }

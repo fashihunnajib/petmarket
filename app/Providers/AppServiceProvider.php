@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use App\Modules\Ordering\Services\ResolveCustomerSession;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
@@ -32,6 +33,9 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(Login::class, function (Login $event): void {
             $user = $event->user;
+            if (! $user instanceof User) {
+                return;
+            }
 
             // Hanya akun customer yang aktif.
             if ($user->role !== null || ! $user->isActive()) {

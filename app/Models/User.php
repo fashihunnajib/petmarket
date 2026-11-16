@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use App\Models\CustomerSession;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -19,7 +18,7 @@ use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 /**
- * @property int $id
+ * @property int<1, max> $id
  * @property string $name
  * @property string $email
  * @property Carbon|null $email_verified_at
@@ -102,11 +101,15 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     {
         return $this->hasOne(Tenant::class);
     }
-/**
- * Sesi keranjang milik customer.
- */
-public function customerSessions(): HasMany
-{
-    return $this->hasMany(CustomerSession::class);
-}
+
+    /**
+        /**
+     * Sesi keranjang milik customer.
+     *
+     * @return HasMany<CustomerSession, $this>
+     */
+    public function customerSessions(): HasMany
+    {
+        return $this->hasMany(CustomerSession::class);
+    }
 }
