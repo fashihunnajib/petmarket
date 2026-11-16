@@ -8,6 +8,8 @@ use App\Modules\Ordering\Services\CartService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
+use App\Models\Tenant;
+use App\Support\Tenancy\TenantContext;
 
 class CartServiceTest extends TestCase
 {
@@ -52,4 +54,73 @@ class CartServiceTest extends TestCase
         $this->assertSame(5, $view->lines[0]->quantity);
         $this->assertSame(75000, $view->subtotal);
     }
+public function test_add_accepts_product_from_another_tenant_when_context_is_active(): void
+{
+    $tenantA = Tenant::factory()->create(['status' => 'active']);
+    $tenantB = Tenant::factory()->create(['status' => 'active']);
+
+    $product = Product::factory()->create([
+        'tenant_id' => $tenantB->id,
+        'base_price' => 20000,
+        'stock_qty' => 10,
+        'is_available' => true,
+    ]);
+
+    $session = $this->makeCustomerSession();
+
+    app(TenantContext::class)->set($tenantA);
+
+    $this->cart()->add($session, $product->id, 1);
+
+    $view = $this->cart()->view($session);
+
+    $this->assertCount(1, $view->lines);
+    $this->assertSame($tenantB->id, $view->lines[0]->tenantId);
+    $this->assertTrue($view->lines[0]->available);
+}
+
+public function test_view_displays_cross_tenant_product_when_context_is_active(): void
+{
+    $tenantA = Tenant::factory()->create(['status' => 'active']);
+    $tenantB = Tenant::factory()->create(['status' => 'active']);
+
+    $product = Product::factory()->create([
+        'tenant_id' => $tenantB->id,
+        'base_price' => 25000,
+        'stock_qty' => 10,
+        'is_available' => true,
+    ]);
+
+    $session = $this->makeCustomerSession();
+
+    app(TenantContext::class)->clear();
+
+    $this->cart()->add($session, $product->id, 2);
+
+    app(TenantContext::class)->set($tenantA);
+
+    $view = $this->cart()->view($session);
+
+    $this->assertCount(1, $view->lines);
+    $this->assertSame($tenantB->id, $view->lines[0]->tenantId);
+    $this->assertTrue($view->lines[0]->available);
+    $this->assertSame(50000, $view->subtotal);
+}
+
+public function test_add_rejects_product_from_inactive_tenant(): void
+{
+    $tenant = Tenant::factory()->create(['status' => 'suspended']);
+
+    $product = Product::factory()->create([
+        'tenant_id' => $tenant->id,
+        'is_available' => true,
+        'stock_qty' => 10,
+    ]);
+
+    $session = $this->makeCustomerSession();
+
+    $this->expectException(\App\Modules\Ordering\Exceptions\CartException::class);
+
+    $this->cart()->add($session, $product->id, 1);
+}
 }

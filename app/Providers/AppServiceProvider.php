@@ -2,43 +2,57 @@
 
 namespace App\Providers;
 
+use App\Modules\Ordering\Services\ResolveCustomerSession;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        // Scoped: satu instance per request/job; direset di lifecycle berikutnya (tidak bocor).
         $this->app->scoped(
             TenantContext::class,
             fn (): TenantContext => new TenantContext,
         );
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        // Membatasi parameter route agar angka saja (mencegah bentrok 404 pada URL /products/create)
         Route::pattern('product', '[0-9]+');
         Route::pattern('id', '[0-9]+');
 
         $this->configureDefaults();
+
+        Event::listen(Login::class, function (Login $event): void {
+            $user = $event->user;
+
+            // Hanya akun customer yang aktif.
+            if ($user->role !== null || ! $user->isActive()) {
+                return;
+            }
+
+            $request = request();
+
+            // Cari sesi guest berdasarkan token yang valid.
+            $session = app(ResolveCustomerSession::class)->current($request);
+
+            if (! $session || $session->user_id !== null) {
+                return;
+            }
+
+            // Hubungkan sesi guest ke akun customer.
+            $session->user_id = $user->id;
+            $session->save();
+        });
     }
 
-    /**
-     * Configure default behaviors for production-ready applications.
-     */
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);

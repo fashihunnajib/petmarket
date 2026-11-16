@@ -33,13 +33,14 @@ final class CartService
         }
 
         /** @var Product|null $product */
-        $product = Product::query()
-            ->with('tenant')
-            ->where('id', $productId)
-            ->where('is_available', true)
-            ->where('stock_qty', '>', 0)
-            ->first();
-
+       $product = Product::query()
+    ->withoutGlobalScope('tenant')
+    ->with('tenant')
+    ->where('id', $productId)
+    ->where('is_available', true)
+    ->where('stock_qty', '>', 0)
+    ->whereHas('tenant', fn ($query) => $query->where('status', 'active'))
+    ->first();
         if ($product === null) {
             throw CartException::menuNotOrderable();
         }
@@ -163,7 +164,12 @@ final class CartService
 
         foreach ($items as $item) {
             /** @var Product|null $product */
-            $product = Product::query()->with('tenant')->where('id', $item['product_id'])->first();
+           $product = Product::query()
+    ->withoutGlobalScope('tenant')
+    ->with('tenant')
+    ->where('id', $item['product_id'])
+    ->whereHas('tenant', fn ($query) => $query->where('status', 'active'))
+    ->first();
             $qty = (int) $item['quantity'];
 
             $available = $product !== null && $product->is_available && $product->stock_qty >= $qty;
