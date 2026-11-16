@@ -110,12 +110,12 @@
                                     @endif
                                 </td>
                                 <td class="border-r border-emerald-400 px-4 py-3 text-left pl-6">
-                                    <span class="font-bold">{{ $item->bankAccount?->bank_name ?? 'BCA' }}</span>
+                                    <span class="font-bold">{{ $item->bankAccount?->bank_code ?? '-' }}</span>
                                     <span class="text-xs text-gray-600">
-                                        - {{ $item->bankAccount?->account_number_cipher ? $item->bankAccount?->account_last4 : '1234' }}
+                                        - {{ $item->bankAccount?->account_last4 ?? '----' }}
                                     </span>
                                     <div class="text-xs text-gray-500">
-                                        a.n {{ $item->bankAccount?->account_holder_name ?? '-' }}
+                                        a.n {{ $item->bankAccount?->account_holder ?? '-' }}
                                     </div>
                                 </td>
                                 <td class="border-r border-emerald-400 px-4 py-3 font-bold">
