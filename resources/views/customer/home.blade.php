@@ -62,14 +62,27 @@
                                 </div>
                             </div>
 
-                            <div class="px-5 pb-5 pt-2">
+                            <div class="grid grid-cols-2 gap-2 px-5 pb-5 pt-2">
                                 <button
                                     type="button"
                                     onclick="Livewire.dispatch('cart-add', { productId: {{ $product->id }} }); window.dispatchEvent(new CustomEvent('open-cart'));"
-                                    class="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-[0.99]"
+                                    class="w-full rounded-xl border border-emerald-600 bg-white px-3 py-2.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-50 dark:bg-zinc-900 dark:text-emerald-400 dark:hover:bg-zinc-800"
                                 >
-                                    + Tambah ke Keranjang
+                                    + Keranjang
                                 </button>
+
+                                <form method="POST" action="{{ route('customer.checkout.direct') }}">
+                                    @csrf
+                                    <input type="hidden" name="product_id" value="{{ $product->id }}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button
+                                        type="submit"
+                                        @disabled(! $product->is_available || $product->stock_qty < 1)
+                                        class="w-full rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-600"
+                                    >
+                                        Beli
+                                    </button>
+                                </form>
                             </div>
                         </article>
                     @endforeach
