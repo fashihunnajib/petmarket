@@ -106,6 +106,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return redirect()->route('admin.dashboard');
         }
 
+        if ($user->hasRole('tenant')) {
+            $tenantId = DB::table('user_tenant_roles')
+                ->where('user_id', $user->id)
+                ->value('tenant_id');
+        }
+
         // Cari tenant_id milik user dari tabel user_tenant_roles
         $tenantId = DB::table('user_tenant_roles')
             ->where('user_id', $user->id)
