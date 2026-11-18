@@ -15,14 +15,14 @@ class OrderItem extends Model
     protected function casts(): array
     {
         return [
-            'type_snapshot' => 'enum:animal,good',
+            'type_snapshot' => 'string',
             'unit_price_snapshot' => 'integer',
             'quantity' => 'integer',
             'line_total' => 'integer',
         ];
     }
 
-    /**  @return BelongsTo<Product, $this>*/
+    /** @return BelongsTo<Product, $this> */
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

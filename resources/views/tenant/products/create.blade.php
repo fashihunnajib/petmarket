@@ -254,7 +254,7 @@
                     </div>
 
                     <div class="h-36 bg-slate-100 rounded-2xl border border-slate-200 flex items-center justify-center text-slate-400 text-xs font-medium">
-                        🗺️ Max Radius Layanan Pengiriman: {{ $tenant->max_delivery_radius_km ?? 15 }} KM
+                        🗺️ Max Radius Layanan Pengiriman: {{ number_format((float) ($tenant->max_delivery_radius_km ?? 0), 2) }} KM
                     </div>
 
                     <div class="pt-4 flex justify-between">

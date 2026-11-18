@@ -9,13 +9,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
- * Order induk — platform-scoped: satu checkout bisa lintas tenant.
+ * Order per tenant — dipecah saat checkout (FR-CUS-03).
  */
 class TenantOrder extends Model
 {
     use BelongsToTenant;
 
-    protected $fillable = ['order_number', 'checkout_key', 'status'];
+    protected $fillable = [
+        'order_number',
+        'checkout_key',
+        'status',
+        'shipping_address',
+        'shipping_latitude',
+        'shipping_longitude',
+        'customer_snapshot',
+        'placed_at',
+    ];
 
     protected function casts(): array
     {
@@ -38,6 +47,12 @@ class TenantOrder extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /** @return BelongsTo<Order, $this> */

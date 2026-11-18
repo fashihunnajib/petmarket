@@ -14,15 +14,40 @@
                 PetMarket<span class="text-zinc-900">.</span>
             </a>
 
-            <nav class="flex items-center gap-5 text-sm font-medium text-zinc-600">
-                <a href="{{ route('home') }}" class="text-emerald-700">Beranda</a>
-                <a href="#katalog" class="hover:text-emerald-700">Katalog</a>
-                @auth
-                    <a href="{{ route('dashboard') }}" class="hover:text-emerald-700">Dashboard</a>
-                @else
-                    <a href="{{ route('login') }}" class="hover:text-emerald-700">Masuk</a>
-                @endauth
-            </nav>
+           
+
+<nav class="flex items-center gap-5 text-sm font-medium text-zinc-600">
+    <a href="{{ route('home') }}" class="text-emerald-700">Beranda</a>
+    <a href="#katalog" class="hover:text-emerald-700">Katalog</a>
+
+   
+@auth
+    <span class="text-zinc-700 font-semibold">
+    {{ auth()->user()->name }}
+</span>
+
+    @if (auth()->user()->hasRole('admin') || auth()->user()->hasRole('tenant'))
+        <a href="{{ route('dashboard') }}" class="hover:text-emerald-700">
+            Dashboard
+        </a>
+    @endif
+
+    <form method="POST" action="{{ route('logout') }}">
+        @csrf
+        <button type="submit" class="hover:text-red-600">
+            Logout
+        </button>
+    </form>
+    @else
+      <a href="{{ route('login', ['redirect' => '/']) }}" class="hover:text-emerald-700">
+    Masuk
+</a>
+        <a href="{{ route('register') }}" class="hover:text-emerald-700">
+            Daftar
+        </a>
+    @endauth
+</nav>
+
         </div>
     </header>
 

@@ -7,17 +7,24 @@ use App\Models\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use stdClass;
 
 class ProductController extends Controller
 {
     /**
-     * Tampilkan katalog produk
+     * Tampilkan katalog produk milik tenant.
      */
     public function index(Tenant $tenant, Request $request): View|JsonResponse
     {
+        $this->ensureDefaultCategories((int) $tenant->id);
+
         $search = $request->query('search');
         $type = $request->query('type');
         $categoryId = $request->query('category_id');
@@ -47,12 +54,12 @@ class ProductController extends Controller
             $query->where('products.type', 'goods');
         }
 
-        if ($search) {
+        if (is_string($search) && $search !== '') {
             $query->where('products.name', 'like', "%{$search}%");
         }
 
-        if ($categoryId) {
-            $query->where('products.category_id', $categoryId);
+        if (is_numeric($categoryId)) {
+            $query->where('products.category_id', (int) $categoryId);
         }
 
         if ($stockFilter === 'low') {
@@ -71,14 +78,13 @@ class ProductController extends Controller
 
         $products = $query->paginate(12)->withQueryString();
 
-        // Dukungan respons JSON jika dipanggil via API / getJson
         if ($request->wantsJson()) {
             return response()->json([
                 'products' => $products->items(),
             ]);
         }
 
-        $categories = DB::table('product_categories')->get();
+        $categories = $this->getTenantCategories((int) $tenant->id);
 
         return view('tenant.products.index', compact(
             'tenant',
@@ -96,44 +102,196 @@ class ProductController extends Controller
     }
 
     /**
-     * Update Produk (Mendukung Web Form & Partial PATCH JSON)
+     * Tampilkan form tambah produk baru.
+     */
+    public function create(Tenant $tenant): View
+    {
+        $this->ensureDefaultCategories((int) $tenant->id);
+        $categories = $this->getTenantCategories((int) $tenant->id);
+
+        return view('tenant.products.create', compact('tenant', 'categories'));
+    }
+
+    /**
+     * Simpan produk baru ke database.
+     */
+    public function store(Request $request, Tenant $tenant): RedirectResponse|JsonResponse
+    {
+        $this->ensureDefaultCategories((int) $tenant->id);
+
+        if ($request->has('base_price')) {
+            $rawPrice = $request->input('base_price');
+            $cleanPrice = preg_replace('/[^0-9]/', '', is_scalar($rawPrice) ? (string) $rawPrice : '');
+            $request->merge(['base_price' => $cleanPrice]);
+        }
+
+        // Jika category_id kosong, otomatis gunakan kategori pertama milik tenant agar tidak gagal NOT NULL
+        if (! $request->filled('category_id')) {
+            $firstCategory = $this->getTenantCategories((int) $tenant->id)->first();
+            if ($firstCategory !== null) {
+                $request->merge(['category_id' => $firstCategory->id]);
+            }
+        }
+
+        $categoryRule = Schema::hasColumn('product_categories', 'tenant_id')
+            ? Rule::exists('product_categories', 'id')->where('tenant_id', $tenant->id)
+            : Rule::exists('product_categories', 'id');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'type' => ['required', Rule::in(['animal', 'goods'])],
+            'category_id' => ['required', $categoryRule],
+            'base_price' => ['required', 'numeric', 'min:0'],
+            'stock_qty' => ['required', 'integer', 'min:0'],
+            'description' => ['nullable', 'string'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'breed' => ['nullable', 'string', 'max:100'],
+            'age_months' => ['nullable', 'integer', 'min:0'],
+            'gender' => ['nullable', Rule::in(['male', 'female'])],
+            'vaccination_status' => ['nullable', 'string'],
+            'weight_kg' => ['nullable', 'numeric'],
+            'health_history' => ['nullable', 'string'],
+            'is_available' => ['nullable', 'boolean'],
+        ], [
+            'category_id.required' => 'Kategori produk wajib dipilih.',
+        ]);
+
+        $photoPath = null;
+        if ($request->hasFile('photo')) {
+            $storedPath = $request->file('photo')->store('products', 'public');
+            $photoPath = is_string($storedPath) ? $storedPath : null;
+        }
+
+        $isAvailable = $request->has('is_available')
+            ? (bool) $request->input('is_available')
+            : true;
+
+        $productId = DB::table('products')->insertGetId([
+            'tenant_id' => $tenant->id,
+            'category_id' => $validated['category_id'],
+            'name' => $validated['name'],
+            'type' => $validated['type'],
+            'base_price' => $validated['base_price'],
+            'stock_qty' => $validated['stock_qty'],
+            'description' => $validated['description'] ?? null,
+            'photo_path' => $photoPath,
+            'is_available' => $isAvailable,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        if ($validated['type'] === 'animal' && Schema::hasTable('product_animals')) {
+            DB::table('product_animals')->insert([
+                'tenant_id' => $tenant->id,
+                'product_id' => $productId,
+                'breed' => $validated['breed'] ?? null,
+                'age_months' => $validated['age_months'] ?? null,
+                'gender' => $validated['gender'] ?? null,
+                'vaccination_status' => $validated['vaccination_status'] ?? null,
+                'weight_kg' => $validated['weight_kg'] ?? null,
+                'health_history' => $validated['health_history'] ?? null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        if ($request->wantsJson()) {
+            $createdProduct = DB::table('products')->where('id', $productId)->first();
+
+            return response()->json([
+                'ok' => true,
+                'product' => $createdProduct,
+            ], 201);
+        }
+
+        return redirect()
+            ->route('tenant.products.index', ['tenant' => $tenant->slug ?? $tenant->id])
+            ->with('success', 'Produk berhasil ditambahkan.');
+    }
+
+    /**
+     * Tampilkan form edit produk.
+     */
+    public function edit(Tenant $tenant, int $product): View
+    {
+        $this->ensureDefaultCategories((int) $tenant->id);
+
+        $productData = DB::table('products')
+            ->leftJoin('product_animals', 'products.id', '=', 'product_animals.product_id')
+            ->select(
+                'products.*',
+                'product_animals.breed',
+                'product_animals.age_months',
+                'product_animals.gender',
+                'product_animals.vaccination_status',
+                'product_animals.weight_kg',
+                'product_animals.health_history'
+            )
+            ->where('products.tenant_id', $tenant->id)
+            ->where('products.id', $product)
+            ->first();
+
+        if (! $productData) {
+            abort(404);
+        }
+
+        $categories = $this->getTenantCategories((int) $tenant->id);
+
+        return view('tenant.products.edit', [
+            'tenant' => $tenant,
+            'product' => $productData,
+            'categories' => $categories,
+        ]);
+    }
+
+    /**
+     * Update produk (mendukung form web & partial PATCH JSON).
      */
     public function update(Request $request, Tenant $tenant, int $product): RedirectResponse|JsonResponse
     {
-        $existingProduct = DB::table('products')->where('tenant_id', $tenant->id)->where('id', $product)->first();
+        $existingProduct = DB::table('products')
+            ->where('tenant_id', $tenant->id)
+            ->where('id', $product)
+            ->first();
+
         if (! $existingProduct) {
             abort(404);
         }
 
         if ($request->has('base_price')) {
-            $cleanPrice = preg_replace('/[^0-9]/', '', (string) $request->input('base_price'));
+            $rawPrice = $request->input('base_price');
+            $cleanPrice = preg_replace('/[^0-9]/', '', is_scalar($rawPrice) ? (string) $rawPrice : '');
             $request->merge(['base_price' => $cleanPrice]);
         }
 
-        // Menggunakan 'sometimes|required' agar aman untuk parsial update (PATCH)
+        $categoryRule = Schema::hasColumn('product_categories', 'tenant_id')
+            ? Rule::exists('product_categories', 'id')->where('tenant_id', $tenant->id)
+            : Rule::exists('product_categories', 'id');
+
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'type' => 'sometimes|required|in:animal,goods',
-            'category_id' => 'nullable|exists:product_categories,id',
-            'base_price' => 'sometimes|required|numeric|min:0',
-            'stock_qty' => 'sometimes|required|integer|min:0',
-            'description' => 'nullable|string',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'breed' => 'nullable|string|max:100',
-            'age_months' => 'nullable|integer|min:0',
-            'gender' => 'nullable|in:male,female',
-            'vaccination_status' => 'nullable|string',
-            'weight_kg' => 'nullable|numeric',
-            'health_history' => 'nullable|string',
-            'is_available' => 'nullable|boolean',
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'type' => ['sometimes', 'required', Rule::in(['animal', 'goods'])],
+            'category_id' => ['sometimes', 'required', $categoryRule],
+            'base_price' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'stock_qty' => ['sometimes', 'required', 'integer', 'min:0'],
+            'description' => ['nullable', 'string'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'breed' => ['nullable', 'string', 'max:100'],
+            'age_months' => ['nullable', 'integer', 'min:0'],
+            'gender' => ['nullable', Rule::in(['male', 'female'])],
+            'vaccination_status' => ['nullable', 'string'],
+            'weight_kg' => ['nullable', 'numeric'],
+            'health_history' => ['nullable', 'string'],
+            'is_available' => ['nullable', 'boolean'],
         ]);
 
-        $photoPath = $existingProduct->photo_path;
+        $photoPath = is_string($existingProduct->photo_path) ? $existingProduct->photo_path : null;
         if ($request->hasFile('photo')) {
-            if ($photoPath && Storage::disk('public')->exists($photoPath)) {
+            if ($photoPath !== null && $photoPath !== '' && Storage::disk('public')->exists($photoPath)) {
                 Storage::disk('public')->delete($photoPath);
             }
-            $photoPath = $request->file('photo')->store('products', 'public');
+            $storedPath = $request->file('photo')->store('products', 'public');
+            $photoPath = is_string($storedPath) ? $storedPath : null;
         }
 
         $updateData = ['updated_at' => now()];
@@ -168,7 +326,7 @@ class ProductController extends Controller
         DB::table('products')->where('id', $product)->update($updateData);
 
         $effectiveType = $validated['type'] ?? $existingProduct->type;
-        if ($effectiveType === 'animal' && DB::getSchemaBuilder()->hasTable('product_animals')) {
+        if ($effectiveType === 'animal' && Schema::hasTable('product_animals')) {
             $animalData = [];
             if ($request->has('breed')) {
                 $animalData['breed'] = $request->input('breed');
@@ -189,7 +347,7 @@ class ProductController extends Controller
                 $animalData['health_history'] = $request->input('health_history');
             }
 
-            if (! empty($animalData)) {
+            if ($animalData !== []) {
                 $animalData['tenant_id'] = $tenant->id;
                 $animalData['updated_at'] = now();
 
@@ -202,11 +360,10 @@ class ProductController extends Controller
 
         $updatedProduct = DB::table('products')->where('id', $product)->first();
 
-        // Dukungan respons JSON untuk testing & API
         if ($request->wantsJson()) {
             return response()->json([
                 'ok' => true,
-                'is_available' => (bool) $updatedProduct->is_available,
+                'is_available' => $updatedProduct !== null && (bool) $updatedProduct->is_available,
                 'product' => $updatedProduct,
             ]);
         }
@@ -214,5 +371,98 @@ class ProductController extends Controller
         return redirect()
             ->route('tenant.products.index', ['tenant' => $tenant->slug ?? $tenant->id])
             ->with('success', 'Produk berhasil diperbarui.');
+    }
+
+    /**
+     * Hapus produk milik tenant.
+     */
+    public function destroy(Tenant $tenant, int $product): RedirectResponse|JsonResponse
+    {
+        $existingProduct = DB::table('products')
+            ->where('tenant_id', $tenant->id)
+            ->where('id', $product)
+            ->first();
+
+        if (! $existingProduct) {
+            abort(404);
+        }
+
+        $photoPath = is_string($existingProduct->photo_path) ? $existingProduct->photo_path : null;
+        if ($photoPath !== null && $photoPath !== '' && Storage::disk('public')->exists($photoPath)) {
+            Storage::disk('public')->delete($photoPath);
+        }
+
+        if (Schema::hasTable('product_animals')) {
+            DB::table('product_animals')->where('product_id', $product)->delete();
+        }
+
+        DB::table('products')->where('id', $product)->delete();
+
+        if (request()->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
+        return redirect()
+            ->route('tenant.products.index', ['tenant' => $tenant->slug ?? $tenant->id])
+            ->with('success', 'Produk berhasil dihapus.');
+    }
+
+    /**
+     * Buat kategori default otomatis jika tenant belum memiliki kategori sama sekali.
+     */
+    private function ensureDefaultCategories(int $tenantId): void
+    {
+        if (! Schema::hasTable('product_categories')) {
+            return;
+        }
+
+        $query = DB::table('product_categories');
+        if (Schema::hasColumn('product_categories', 'tenant_id')) {
+            $query->where('tenant_id', $tenantId);
+        }
+
+        if ($query->exists()) {
+            return;
+        }
+
+        $defaults = ['Hewan Peliharaan', 'Makanan & Pakan', 'Aksesoris & Perlengkapan'];
+
+        foreach ($defaults as $name) {
+            $row = ['name' => $name];
+
+            if (Schema::hasColumn('product_categories', 'tenant_id')) {
+                $row['tenant_id'] = $tenantId;
+            }
+            if (Schema::hasColumn('product_categories', 'slug')) {
+                $row['slug'] = Str::slug($name).'-'.$tenantId;
+            }
+            if (Schema::hasColumn('product_categories', 'is_active')) {
+                $row['is_active'] = true;
+            }
+            if (Schema::hasColumn('product_categories', 'created_at')) {
+                $row['created_at'] = now();
+            }
+            if (Schema::hasColumn('product_categories', 'updated_at')) {
+                $row['updated_at'] = now();
+            }
+
+            DB::table('product_categories')->insert($row);
+        }
+    }
+
+    /**
+     * Ambil daftar kategori milik tenant.
+     *
+     * @return Collection<int, stdClass>
+     */
+    private function getTenantCategories(int $tenantId): Collection
+    {
+        $query = DB::table('product_categories');
+
+        if (Schema::hasColumn('product_categories', 'tenant_id')) {
+            $query->where('tenant_id', $tenantId);
+        }
+
+        return $query->orderBy('name')->get();
     }
 }

@@ -30,13 +30,16 @@ class FortifyServiceProvider extends ServiceProvider
                 {
                     $user = auth()->user();
 
+                    // Tenant tetap menuju dashboard tenant.
                     if ($user?->hasRole('tenant')) {
                         $tenantId = \DB::table('user_tenant_roles')
                             ->where('user_id', $user->id)
                             ->value('tenant_id');
 
                         /** @var Tenant|null $tenant */
-                        $tenant = $tenantId ? Tenant::find($tenantId) : Tenant::first();
+                        $tenant = $tenantId
+                            ? Tenant::find($tenantId)
+                            : Tenant::first();
 
                         if ($tenant) {
                             return redirect()->route('tenant.dashboard', [
@@ -47,8 +50,27 @@ class FortifyServiceProvider extends ServiceProvider
                         return redirect('/dashboard');
                     }
 
+                    // Admin tetap menuju dashboard admin.
                     if ($user?->hasRole('admin')) {
                         return redirect()->route('admin.dashboard');
+                    }
+
+                    // Customer kembali ke halaman asal setelah login.
+                    $redirect = $request->input('redirect');
+
+                    // Login berasal dari halaman utama.
+                    if ($redirect === '/') {
+                        return redirect()->route('home');
+                    }
+
+                    // Login berasal dari katalog toko.
+                    if (
+                        is_string($redirect) &&
+                        preg_match('#\A/toko/([a-zA-Z0-9-]+)\z#', $redirect, $matches)
+                    ) {
+                        return redirect()->route('customer.home', [
+                            'shop' => $matches[1],
+                        ]);
                     }
 
                     return redirect('/dashboard');

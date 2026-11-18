@@ -4,8 +4,24 @@
 ])
 
 @php
-    // Fallback jika $tenant di route masih berupa string slug/ID
+    if (is_string($tenant) || is_numeric($tenant)) {
+        $tenant = \App\Models\Tenant::where('slug', $tenant)
+            ->orWhere('id', $tenant)
+            ->first();
+    }
+
+    if (! is_object($tenant) && auth()->check()) {
+        $tenantId = \Illuminate\Support\Facades\DB::table('user_tenant_roles')
+            ->where('user_id', auth()->id())
+            ->value('tenant_id');
+
+        if ($tenantId) {
+            $tenant = \App\Models\Tenant::find($tenantId);
+        }
+    }
+
     $tenantSlug = is_object($tenant) ? ($tenant->slug ?? $tenant->id) : $tenant;
+    $tenantDisplayName = is_object($tenant) ? $tenant->name : (auth()->user()?->name ?? 'PetMarket');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="antialiased">
@@ -37,7 +53,7 @@
                     <a href="{{ route('tenant.dashboard', ['tenant' => $tenantSlug]) }}" 
                     class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all {{ request()->routeIs('tenant.dashboard') ? 'bg-emerald-500/10 text-emerald-400 font-semibold border-l-4 border-emerald-500' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                    <span>Dashboard</span>
+                        <span>Dashboard</span>
                     </a>
 
                     <!-- Product -->
@@ -48,38 +64,39 @@
                     </a>
 
                     <!-- Pesanan -->
-                    <a href="#" 
+                    <a href="{{ route('tenant.orders.index', ['tenant' => $tenantSlug]) }}" 
                        class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all {{ request()->routeIs('tenant.orders*') ? 'bg-emerald-500/10 text-emerald-400 font-semibold border-l-4 border-emerald-500' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         <span>Pesanan</span>
                     </a>
 
                     <!-- Toko -->
-                    <a href="#" 
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-zinc-400 hover:text-white hover:bg-zinc-800/60">
+                    <a href="{{ route('tenant.settings.index', ['tenant' => $tenantSlug]) }}"
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all {{ request()->routeIs('tenant.settings.*') ? 'bg-emerald-500/10 text-emerald-400 font-semibold border-l-4 border-emerald-500' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m3 0h1m-1-4h.01M9 16h.01M9 12h.01M13 16h.01M13 12h.01"/></svg>
                         <span>Toko</span>
                     </a>
 
-                  <!-- Menu Lokasi & Radius -->
-<a href="{{ route('tenant.location.index', ['tenant' => $tenant->slug ?? $tenant->id]) }}" 
-   class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all {{ request()->routeIs('tenant.location.*') ? 'bg-[#062c1e] text-emerald-400 border-l-4 border-emerald-500 font-semibold' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60' }}">
-    <svg class="w-5 h-5 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-    </svg>
-    <span>Lokasi & Radius</span>
-</a>
+                    <!-- Menu Lokasi & Radius -->
+                    <a href="{{ route('tenant.location.index', ['tenant' => $tenantSlug]) }}" 
+                       class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all {{ request()->routeIs('tenant.location.*') ? 'bg-[#062c1e] text-emerald-400 border-l-4 border-emerald-500 font-semibold' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60' }}">
+                        <svg class="w-5 h-5 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span>Lokasi & Radius</span>
+                    </a>
+
                     <!-- Saldo -->
-                    <a href="#" 
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-zinc-400 hover:text-white hover:bg-zinc-800/60">
+                    <a href="{{ route('tenant.balance.index', ['tenant' => $tenantSlug]) }}"
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all {{ request()->routeIs('tenant.balance.*') ? 'bg-emerald-500/10 text-emerald-400 font-semibold border-l-4 border-emerald-500' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                         <span>Saldo</span>
                     </a>
 
                     <!-- Penarikan Dana -->
-                    <a href="#" 
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-zinc-400 hover:text-white hover:bg-zinc-800/60">
+                    <a href="{{ route('tenant.withdrawals.index', ['tenant' => $tenantSlug]) }}"
+                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all {{ request()->routeIs('tenant.withdrawals.*') ? 'bg-emerald-500/10 text-emerald-400 font-semibold border-l-4 border-emerald-500' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span>Penarikan Dana</span>
                     </a>
@@ -99,9 +116,9 @@
                     <div class="w-9 h-9 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold shrink-0">
                         🐝
                     </div>
-                   <div class="text-sm font-semibold text-white truncate">
-                    {{ $tenant->name ?? 'PetHouse' }}
-                     </div>
+                    <div class="text-sm font-semibold text-white truncate">
+                        {{ $tenantDisplayName }}
+                    </div>
                 </div>
                 <form method="POST" action="{{ route('logout') ?? '#' }}">
                     @csrf
@@ -143,7 +160,7 @@
                         <div class="w-8 h-8 rounded-full bg-amber-400/20 text-amber-600 flex items-center justify-center font-bold text-sm">
                             🐝
                         </div>
-                        <span class="text-sm font-semibold text-slate-700">PetHouse</span>
+                        <span class="text-sm font-semibold text-slate-700">{{ $tenantDisplayName }}</span>
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </div>
                 </div>

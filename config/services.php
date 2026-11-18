@@ -35,4 +35,18 @@ return [
         ],
     ],
 
+    // Gateway QRIS (UC-07). Masa berlaku maksimal 15 menit (900 detik).
+    'qris' => [
+        'expiry_seconds' => (int) env('QRIS_EXPIRY_SECONDS', 900),
+        'merchant_nmid' => env('QRIS_MERCHANT_NMID', 'ID1020008821'),
+        'fake_unavailable' => (bool) env('QRIS_FAKE_UNAVAILABLE', false),
+    ],
+
+    'payout' => [
+        'driver' => env('PAYOUT_DRIVER', 'sandbox'),
+        'base_url' => env('PAYOUT_BASE_URL', 'https://api.xendit.co'),
+        'secret_key' => env('PAYOUT_SECRET_KEY', ''),
+        'webhook_token' => env('PAYOUT_WEBHOOK_TOKEN', 'petmarket-payout-webhook-secret'),
+    ],
+
 ];

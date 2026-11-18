@@ -175,6 +175,39 @@ class DemoShopSeeder extends Seeder
                     ],
                 ],
             ],
+            'PETONAR' => [
+                'slug' => 'petonar',
+                'name' => 'Petonar Pet Shop',
+                'tax_rate' => 0.1000,
+                'service_fee_rate' => 0.0200,
+                'latitude' => -8.21920000,
+                'longitude' => 114.36910000,
+                'max_delivery_radius_km' => 30.00,
+                'balance' => 1000000,
+                'commission_rate' => 0.0500,
+                'categories' => [
+                    'Hewan Peliharaan' => [
+                        'sort_order' => 1,
+                        'animals' => [
+                            [
+                                'name' => 'Kelinci',
+                                'base_price' => 40000,
+                                'stock_qty' => 14,
+                                'description' => 'Kelinci sehat dan lincah.',
+                                'detail' => [
+                                    'breed' => 'Gold',
+                                    'age_months' => 2,
+                                    'gender' => 'male',
+                                    'vaccination_status' => 'not vaccinated',
+                                    'weight_kg' => 1.5,
+                                    'health_history' => 'Sehat, makan lahap.',
+                                ],
+                            ],
+                        ],
+                        'goods' => [],
+                    ],
+                ],
+            ],
         ];
 
         $tenants = [];
@@ -275,6 +308,25 @@ class DemoShopSeeder extends Seeder
             UserTenantRole::firstOrCreate([
                 'user_id' => $operator->id,
                 'tenant_id' => $tenants['DEMO']->id,
+                'role' => 'operator',
+            ]);
+        }
+
+        // Operator demo -> tenant PAW (peran operator).
+        $petonar = User::where('email', 'pawcare@petmarket.test')->first();
+        if ($petonar !== null) {
+            UserTenantRole::firstOrCreate([
+                'user_id' => $petonar->id,
+                'tenant_id' => $tenants['PAW']->id,
+                'role' => 'operator',
+            ]);
+        }
+
+        $petonar = User::where('email', 'petonar@petmarket.test')->first();
+        if ($petonar !== null) {
+            UserTenantRole::firstOrCreate([
+                'user_id' => $petonar->id,
+                'tenant_id' => $tenants['PETONAR']->id,
                 'role' => 'operator',
             ]);
         }
