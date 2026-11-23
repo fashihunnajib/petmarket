@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\TenantRegistrationController;
-use App\Models\Product;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
