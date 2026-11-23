@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\TenantRegistrationController;
 use App\Models\Product;
 use App\Models\Tenant;
 use App\Modules\Ordering\Services\CartService;
@@ -95,6 +96,9 @@ Route::post('/checkout/confirm', function (Request $request) {
 })->name('customer.checkout.confirm');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/buka-toko', [TenantRegistrationController::class, 'create'])->name('buka-toko');
+    Route::post('/buka-toko', [TenantRegistrationController::class, 'store'])->name('buka-toko.store');
+
     Route::get('/dashboard', function () {
         $user = auth()->user();
 
@@ -104,12 +108,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         if ($user->hasRole('admin')) {
             return redirect()->route('admin.dashboard');
-        }
-
-        if ($user->hasRole('tenant')) {
-            $tenantId = DB::table('user_tenant_roles')
-                ->where('user_id', $user->id)
-                ->value('tenant_id');
         }
 
         // Cari tenant_id milik user dari tabel user_tenant_roles
@@ -122,6 +120,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             $tenant = $tenantId ? Tenant::find($tenantId) : Tenant::first();
 
             if ($tenant) {
+                if ($tenant->status !== 'active') {
+                    return redirect()->route('tenant.register');
+                }
+
                 return redirect()->route('tenant.dashboard', [
                     'tenant' => $tenant->slug ?? $tenant->id,
                 ]);
