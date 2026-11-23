@@ -1,15 +1,17 @@
 <x-layouts.tenant title="Manajemen Pesanan" :tenant="$tenant">
     @php
         $tenantSlug = $tenant->slug ?? $tenant->id;
-        $statusLabels = [
-            'pending_payment' => ['Menunggu Bayar', 'bg-amber-100 text-amber-700'],
-            'new_order' => ['Pesanan Baru', 'bg-emerald-100 text-emerald-700'],
-            'processing' => ['Diproses', 'bg-blue-100 text-blue-700'],
-            'in_transit' => ['Dikirim', 'bg-indigo-100 text-indigo-700'],
-            'completed' => ['Selesai', 'bg-slate-100 text-slate-700'],
-            'cancelled' => ['Dibatalkan', 'bg-red-100 text-red-700'],
-            'expired' => ['Kedaluwarsa', 'bg-red-100 text-red-700'],
-        ];
+     $statusLabels = [
+         'pending' => ['Menunggu Bayar', 'bg-amber-100 text-amber-700'],
+         'pending_payment' => ['Menunggu Bayar', 'bg-amber-100 text-amber-700'],
+         'scheduled' => ['Terjadwal (Pre-Order)', 'bg-purple-100 text-purple-700'],
+         'new_order' => ['Pesanan Baru', 'bg-emerald-100 text-emerald-700'],
+         'processing' => ['Diproses', 'bg-blue-100 text-blue-700'],
+         'in_transit' => ['Dikirim', 'bg-indigo-100 text-indigo-700'],
+         'completed' => ['Selesai', 'bg-slate-100 text-slate-700'],
+         'cancelled' => ['Dibatalkan', 'bg-red-100 text-red-700'],
+         'expired' => ['Kedaluwarsa', 'bg-red-100 text-red-700'],
+     ];
     @endphp
 
     <div class="space-y-6">
@@ -46,14 +48,16 @@
         <!-- Tab Filter Status -->
         <div class="flex flex-wrap gap-2">
             @php
-                $tabs = [
-                    'all' => 'Semua (' . $counts['all'] . ')',
-                    'new_order' => 'Pesanan Baru (' . $counts['new_order'] . ')',
-                    'processing' => 'Diproses (' . $counts['processing'] . ')',
-                    'in_transit' => 'Dikirim (' . $counts['in_transit'] . ')',
-                    'completed' => 'Selesai (' . $counts['completed'] . ')',
-                    'cancelled' => 'Dibatalkan (' . $counts['cancelled'] . ')',
-                ];
+             $tabs = [
+                 'all' => 'Semua (' . $counts['all'] . ')',
+                 'pending_payment' => 'Menunggu Bayar (' . $counts['pending_payment'] . ')',
+                 'scheduled' => 'Terjadwal (' . $counts['scheduled'] . ')',
+                 'new_order' => 'Pesanan Baru (' . $counts['new_order'] . ')',
+                 'processing' => 'Diproses (' . $counts['processing'] . ')',
+                 'in_transit' => 'Dikirim (' . $counts['in_transit'] . ')',
+                 'completed' => 'Selesai (' . $counts['completed'] . ')',
+                 'cancelled' => 'Dibatalkan (' . $counts['cancelled'] . ')',
+             ];
             @endphp
 
             @foreach($tabs as $key => $label)
@@ -81,14 +85,20 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($orders as $order)
-                            @php
-                                $badge = $statusLabels[$order->status] ?? [ucfirst(str_replace('_', ' ', $order->status)), 'bg-slate-100 text-slate-700'];
-                                $customerName = $order->customer_snapshot['name'] ?? $order->user?->name ?? 'Pelanggan';
-                            @endphp
-                            <tr class="hover:bg-slate-50/70 transition">
-                                <td class="px-4 py-4 font-semibold text-slate-900 whitespace-nowrap">
-                                    {{ $order->order_number ?? ('#ORD-' . $order->id) }}
-                                </td>
+                         @php
+                             $badge = $statusLabels[$order->status] ?? [ucfirst(str_replace('_', ' ', $order->status)), 'bg-slate-100 text-slate-700'];
+                             $customerName = $order->customer_snapshot['name'] ?? $order->user?->name ?? 'Pelanggan';
+                             $payment = $order->order?->payment;
+                         @endphp
+                         <tr class="hover:bg-slate-50/70 transition">
+                             <td class="px-4 py-4 font-semibold text-slate-900 whitespace-nowrap">
+                                 <div>{{ $order->order_number ?? ('#ORD-' . $order->id) }}</div>
+                                 @if ($payment)
+                                     <span class="mt-1 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold {{ $payment->status === 'paid' ? 'bg-emerald-50 text-emerald-700' : ($payment->status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700') }}">
+                                         QRIS: {{ $payment->status === 'paid' ? 'Lunas' : ($payment->status === 'pending' ? 'Pending' : ucfirst($payment->status)) }}
+                                     </span>
+                                 @endif
+                             </td>
                                 <td class="px-4 py-4 text-slate-700 whitespace-nowrap">
                                     {{ $customerName }}
                                 </td>

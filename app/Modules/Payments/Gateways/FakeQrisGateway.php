@@ -7,6 +7,7 @@ use App\Modules\Payments\Data\PaymentChargeRequest;
 use App\Modules\Payments\Data\QrisCharge;
 use App\Modules\Payments\Exceptions\GatewayUnavailableException;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 final class FakeQrisGateway implements PaymentGateway
 {
@@ -16,6 +17,10 @@ final class FakeQrisGateway implements PaymentGateway
     {
         if ($this->unavailable) {
             throw new GatewayUnavailableException('Gateway QRIS sandbox sedang tidak merespons.');
+        }
+
+        if ($request->splits !== [] && array_sum(array_column($request->splits, 'gross')) !== $request->amount) {
+            throw new InvalidArgumentException('Jumlah split tidak sama dengan nominal tagihan.');
         }
 
         $providerReference = 'FAKE-QRIS-'.strtoupper(Str::random(20));

@@ -24,6 +24,8 @@ class TenantOrderController extends Controller
 
         $counts = [
             'all' => TenantOrder::where('tenant_id', $tenant->id)->count(),
+            'pending_payment' => TenantOrder::where('tenant_id', $tenant->id)->whereIn('status', ['pending', 'pending_payment'])->count(),
+            'scheduled' => TenantOrder::where('tenant_id', $tenant->id)->where('status', 'scheduled')->count(),
             'new_order' => TenantOrder::where('tenant_id', $tenant->id)->where('status', 'new_order')->count(),
             'processing' => TenantOrder::where('tenant_id', $tenant->id)->where('status', 'processing')->count(),
             'in_transit' => TenantOrder::where('tenant_id', $tenant->id)->where('status', 'in_transit')->count(),
@@ -35,6 +37,8 @@ class TenantOrderController extends Controller
             ->when($status !== 'all', function ($query) use ($status): void {
                 if ($status === 'cancelled') {
                     $query->whereIn('status', ['cancelled', 'expired']);
+                } elseif ($status === 'pending_payment') {
+                    $query->whereIn('status', ['pending', 'pending_payment']);
                 } else {
                     $query->where('status', $status);
                 }
@@ -45,7 +49,7 @@ class TenantOrderController extends Controller
                         ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%"));
                 });
             })
-            ->with(['user', 'items'])
+            ->with(['user', 'items', 'order.payment'])
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -57,7 +61,7 @@ class TenantOrderController extends Controller
     {
         abort_if((int) $order->tenant_id !== (int) $tenant->id, 403);
 
-        $order->load(['user', 'items.product', 'delivery']);
+        $order->load(['user', 'items.product', 'delivery', 'order.payment']);
 
         return view('ordering::show', compact('tenant', 'order'));
     }

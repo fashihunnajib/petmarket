@@ -3,31 +3,36 @@
 namespace App\Modules\Ordering\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Order;
+use App\Modules\Ordering\Services\ResolveTrackedOrder;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
+/**
+ * Halaman status & pembayaran pesanan pelanggan.
+ * Order dikenali lewat cookie pelacakan (`order_tracking`) atau akun pemilik (`orders.user_id`).
+ * Tanpa/salah akses -> 404 generik (anti-enumeration).
+ */
 final class OrderStatusController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request, ResolveTrackedOrder $resolver, ?string $order = null): View
     {
-        $token = $request->cookie('order_tracking');
-        abort_if(! is_string($token) || $token === '', 404);
+        $resolvedOrder = is_string($order) && $order !== ''
+            ? $resolver->resolveByPublicId($request, $order)
+            : $resolver->current($request);
 
-        /** @var Order|null $order */
-        $order = Order::query()
-            ->where('tracking_token_hash', hash('sha256', $token))
-            ->with([
-                'tenantOrders.tenant',
-                'tenantOrders.items',
-            ])
-            ->first();
+        if ($resolvedOrder === null) {
+            abort(404);
+        }
 
-        abort_if($order === null, 404);
+        $resolvedOrder->load([
+            'tenantOrders.tenant',
+            'tenantOrders.items',
+            'payment.latestAttempt',
+        ]);
 
         /** @var view-string $viewName */
         $viewName = 'ordering::order';
 
-        return view($viewName, ['order' => $order]);
+        return view($viewName, ['order' => $resolvedOrder]);
     }
 }

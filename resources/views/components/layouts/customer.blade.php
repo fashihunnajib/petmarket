@@ -8,9 +8,15 @@
     <div class="mx-auto flex min-h-screen w-full max-w-7xl flex-col">
    
 <header class="sticky top-0 z-10 flex min-h-14 items-center gap-2 border-b border-zinc-200 bg-white/90 px-4 sm:px-6 lg:px-8 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/90">
+    <a href="{{ route('home') }}" class="text-base font-extrabold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400">PetMarket</a>
+    <span class="text-zinc-300 dark:text-zinc-700">/</span>
     <span class="text-base font-semibold">{{ $title }}</span>
 
     <div class="ms-auto flex items-center gap-3 text-sm font-medium">
+        <a href="{{ route('ordering.history') }}"
+           class="text-zinc-600 hover:text-emerald-600 dark:text-zinc-300">
+            Pesanan Saya
+        </a>
         @guest
             <a href="{{ route('login', ['redirect' => request()->getPathInfo()]) }}"
                class="text-zinc-600 hover:text-emerald-600 dark:text-zinc-300">
