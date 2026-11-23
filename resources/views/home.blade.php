@@ -19,6 +19,7 @@
 <nav class="flex items-center gap-5 text-sm font-medium text-zinc-600">
     <a href="{{ route('home') }}" class="text-emerald-700">Beranda</a>
     <a href="#katalog" class="hover:text-emerald-700">Katalog</a>
+    <a href="{{ route('ordering.history') }}" class="hover:text-emerald-700">Pesanan Saya</a>
 
    
 @auth

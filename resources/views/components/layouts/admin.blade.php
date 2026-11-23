@@ -58,6 +58,13 @@
                     <span>▣</span>
                     <span>Manajemen Tenant</span>
                 </a>
+                
+                <a href="{{ route('admin.payments.index') }}"
+                   class="flex items-center gap-2 text-gray-900 transition-colors hover:text-emerald-700
+                   {{ request()->routeIs('admin.payments.*') ? 'font-bold underline underline-offset-4 decoration-2 decoration-emerald-500' : '' }}">
+                    <span>▤</span>
+                    <span>Pembayaran QRIS</span>
+                </a>
 
                 <a href="{{ route('admin.withdrawals.index') }}"
                    class="flex items-center gap-2 text-gray-900 transition-colors hover:text-emerald-700

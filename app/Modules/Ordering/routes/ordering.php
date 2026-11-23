@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Product;
+use App\Modules\Ordering\Http\Controllers\CustomerOrderHistoryController;
 use App\Modules\Ordering\Http\Controllers\OrderStatusController;
 use App\Modules\Ordering\Http\Controllers\TenantOrderController;
 use App\Modules\Ordering\Services\CartService;
@@ -62,6 +63,6 @@ Route::middleware('web')->group(function (): void {
 
         return redirect()->route('customer.checkout', ['shop' => $shop]);
     })->name('customer.checkout.direct');
-
+    Route::get('/pesanan-saya', CustomerOrderHistoryController::class)->name('ordering.history');
     Route::get('/pesanan/{order?}', OrderStatusController::class)->name('ordering.status');
 });

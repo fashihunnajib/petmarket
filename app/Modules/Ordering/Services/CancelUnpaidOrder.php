@@ -35,6 +35,7 @@ final class CancelUnpaidOrder
                 $tenantOrder->forceFill(['status' => 'cancelled'])->save();
 
                 $items = OrderItem::query()
+                    ->withoutGlobalScope('tenant')
                     ->where('tenant_order_id', $tenantOrder->id)
                     ->get();
 

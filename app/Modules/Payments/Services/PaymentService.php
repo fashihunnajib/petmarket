@@ -206,10 +206,12 @@ final class PaymentService
 
             Order::query()->whereKey($payment->order_id)->update(['status' => 'paid']);
 
-            // Teruskan sub-pesanan tiap toko ke status Pesanan Baru (FR-ORD-01)
+            // Teruskan sub-pesanan reguler tiap toko ke status Pesanan Baru (FR-ORD-01).
+            // Sub-pesanan pre-order (`scheduled`) dibiarkan terjadwal hingga waktu release_at.
             TenantOrder::query()
                 ->withoutGlobalScope('tenant')
                 ->where('order_id', $payment->order_id)
+                ->whereIn('status', ['pending', 'pending_payment'])
                 ->update(['status' => 'new_order']);
 
             DB::table('payment_events')->insert([
@@ -230,5 +232,39 @@ final class PaymentService
         });
 
         return $payment;
+    }
+
+    /**
+     * Khusus mode sandbox: menandai attempt QRIS aktif menjadi kedaluwarsa (`expired`)
+     * agar alur regenerasi QRIS (UC-07 alur 4a) dapat diuji tanpa menunggu 15 menit.
+     *
+     * @throws PaymentException
+     */
+    public function expireActiveAttempt(Payment $payment): Payment
+    {
+        if (! $this->gateway->isSandbox()) {
+            throw PaymentException::sandboxOnly();
+        }
+
+        $payment->refresh();
+        if ($payment->isPaid()) {
+            throw PaymentException::orderNotPayable();
+        }
+
+        DB::transaction(function () use ($payment): void {
+            $attempt = $payment->latestAttempt()->lockForUpdate()->first();
+            if ($attempt !== null && $attempt->status === 'pending') {
+                $attempt->forceFill([
+                    'status' => 'expired',
+                    'expires_at' => now()->subSecond(),
+                ])->save();
+
+                $this->audit->record('payment', $payment->id, 'qris_expired_sandbox', null, [
+                    'attempt_id' => $attempt->id,
+                ]);
+            }
+        });
+
+        return $payment->fresh(['latestAttempt']) ?? $payment;
     }
 }

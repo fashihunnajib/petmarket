@@ -78,10 +78,12 @@ final class CheckoutService
         }
 
         $serviceMode = $scheduledAt !== null
-        ? CheckoutDetails::PICKUP
-        : ($details !== null ? $details->serviceMode : CheckoutDetails::DELIVERY);
+            ? CheckoutDetails::PICKUP
+            : ($details !== null ? $details->serviceMode : CheckoutDetails::DELIVERY);
         $plainToken = bin2hex(random_bytes(32));
         $tokenHash = hash('sha256', $plainToken);
+        $authUserId = auth()->id();
+        $userId = $session->user_id ?? (is_numeric($authUserId) ? (int) $authUserId : null);
 
         try {
             $order = DB::transaction(function () use (
@@ -91,12 +93,23 @@ final class CheckoutService
                 $tokenHash,
                 $scheduledAt,
                 $serviceMode,
-                $details
+                $details,
+                $userId
             ): Order {
+                $customerSnapshot = array_filter([
+                    'session_id' => $session->id,
+                    'name' => $details?->customerName,
+                    'whatsapp' => $details?->whatsapp,
+                    'address' => $details?->deliveryAddress,
+                ], static fn ($value): bool => $value !== null && $value !== '');
+
+                $placedAt = now();
+
                 $order = new Order;
                 $order->forceFill([
                     'public_id' => (string) Str::uuid(),
                     'order_number' => $this->orderNumber(),
+                    'user_id' => $userId,
                     'customer_session_id' => $session->id,
                     'checkout_key' => $idempotencyKey,
                     'tracking_token_hash' => $tokenHash,
@@ -106,13 +119,9 @@ final class CheckoutService
                     'tax_amount' => 0,
                     'service_fee_amount' => 0,
                     'grand_total_amount' => 0,
-                    'customer_snapshot' => array_filter([
-                        'session_id' => $session->id,
-                        'name' => $details?->customerName,
-                        'whatsapp' => $details?->whatsapp,
-                        'address' => $details?->deliveryAddress,
-                    ], static fn ($value): bool => $value !== null && $value !== ''),
-                    'placed_at' => now(),
+                    'shipping_address' => $details?->deliveryAddress,
+                    'customer_snapshot' => $customerSnapshot,
+                    'placed_at' => $placedAt,
                 ])->save();
 
                 $orderSubtotal = 0;
@@ -127,6 +136,7 @@ final class CheckoutService
                     $tenantFee = (int) round($tenantSubtotal * self::SERVICE_FEE_RATE);
                     $commissionAmount = (int) round($tenantSubtotal * $rate);
                     $netAmount = $tenantSubtotal - $commissionAmount;
+                    $tenantGrandTotal = $tenantSubtotal + $tenantTax + $tenantFee;
 
                     $tenantOrder = new TenantOrder;
                     $tenantOrder->forceFill([
@@ -134,6 +144,7 @@ final class CheckoutService
                         'order_number' => $order->order_number.'-'.strtoupper(Str::random(4)),
                         'order_id' => $order->id,
                         'tenant_id' => $tenantId,
+                        'user_id' => $userId,
                         'commission_id' => $commission?->id,
                         'status' => $scheduledAt !== null ? 'scheduled' : 'pending',
                         'scheduled_at' => $scheduledAt,
@@ -143,6 +154,10 @@ final class CheckoutService
                         'service_fee_amount' => $tenantFee,
                         'commission_amount' => $commissionAmount,
                         'net_amount' => $netAmount,
+                        'grand_total_amount' => $tenantGrandTotal,
+                        'shipping_address' => $details?->deliveryAddress,
+                        'customer_snapshot' => $customerSnapshot,
+                        'placed_at' => $placedAt,
                     ])->save();
 
                     // Urutkan product ID sebelum lock untuk mencegah deadlock
