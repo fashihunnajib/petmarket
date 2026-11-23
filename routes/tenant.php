@@ -37,6 +37,7 @@ Route::put('/location', [LocationController::class, 'update'])->name('location.u
 Route::get('/settings', [StoreSettingController::class, 'index'])->name('settings.index');
 Route::put('/settings', [StoreSettingController::class, 'update'])->name('settings.update');
 Route::patch('/settings/status', [StoreSettingController::class, 'toggleStatus'])->name('settings.toggle-status');
+Route::livewire('/settings/pre-order', 'ordering::pre-order-settings')->name('settings.pre-order');
 
 // --- MODUL SALDO & PENARIKAN DANA TENANT ---
 Route::get('/balance', [WithdrawalController::class, 'balance'])->name('balance.index');

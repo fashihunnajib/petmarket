@@ -196,33 +196,12 @@ new class extends Component
             return;
         }
 
-        $subtotal = (int) $selectedLines->sum('lineTotal');
-        $tax = (int) round($subtotal * 0.10);
-        $serviceFee = (int) round($subtotal * 0.02);
-
         session([
             'checkout_mode' => 'cart_selection',
             'checkout_line_keys' => $selectedLines->pluck('lineKey')->all(),
-            'checkout_items' => $selectedLines->map(fn ($line) => [
-                'line_key'     => $line->lineKey,
-                'product_id'   => $line->menuId,
-                'tenant_id'    => $line->tenantId,
-                'tenant_name'  => $line->tenantName,
-                'name'         => $line->name,
-                'quantity'     => $line->quantity,
-                'unit_price'   => $line->unitPrice + $line->modifierTotal,
-                'price_at_add' => $line->priceAtAdd,
-                'line_total'   => $line->lineTotal,
-            ])->all(),
-            'checkout_summary' => [
-                'subtotal'    => $subtotal,
-                'tax'         => $tax,
-                'service_fee' => $serviceFee,
-                'grand_total' => $subtotal + $tax + $serviceFee,
-            ],
         ]);
 
-        $this->redirectRoute('customer.checkout');
+        $this->redirectRoute('customer.checkout', ['shop' => $this->marketSlug]);
     }
 };
 ?>

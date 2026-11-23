@@ -41,6 +41,12 @@ class CartServiceTest extends TestCase
         parent::tearDown();
     }
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Redis::flushdb();
+    }
+
     public function test_add_stores_line_in_redis_and_merges_identical_config(): void
     {
         $product = Product::factory()->create(['base_price' => 15000, 'stock_qty' => 50, 'is_available' => true]);

@@ -3,6 +3,12 @@
 namespace App\Modules\Ordering;
 
 use App\Modules\ModuleServiceProvider;
+use App\Modules\Ordering\Console\ReleaseScheduledOrders;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * Modul: Ordering (alias `ordering`).
@@ -18,6 +24,26 @@ final class OrderingServiceProvider extends ModuleServiceProvider
     public function register(): void
     {
         // Binding kontrak -> implementasi ditambahkan saat modul diimplementasikan.
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        // Rate limiter milik modul: entry token publik (mengurangi brute force token).
+        RateLimiter::for('qr-scan', fn (Request $request): Limit => Limit::perMinute(30)->by($request->ip() ?? 'unknown'));
+
+        // Token pelacakan pesanan opaque 256-bit (disimpan sebagai hash SHA-256); enkripsi
+        // cookie tak menambah kerahasiaan, sedangkan pelacakan stateless butuh nilai stabil.
+        EncryptCookies::except('order_tracking');
+
+        // UC-06: pelepasan pre-order ke antrean toko, dicek setiap menit (toleransi ± 1 menit).
+        if ($this->app->runningInConsole()) {
+            $this->commands([ReleaseScheduledOrders::class]);
+            $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+                $schedule->command('ordering:release-scheduled')->everyMinute()->withoutOverlapping();
+            });
+        }
     }
 
     protected function moduleAlias(): string
