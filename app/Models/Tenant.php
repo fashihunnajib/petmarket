@@ -21,6 +21,8 @@ class Tenant extends Model
         'tax_rate',
         'service_fee_rate',
         'status',
+        'pre_order_enabled',
+        'pre_order_slot_capacity',
         'latitude',
         'longitude',
         'max_delivery_radius_km',
@@ -31,6 +33,8 @@ class Tenant extends Model
         return [
             'tax_rate' => 'decimal:4',
             'service_fee_rate' => 'decimal:4',
+            'pre_order_enabled' => 'boolean',
+            'pre_order_slot_capacity' => 'integer',
             'latitude' => 'decimal:8',
             'longitude' => 'decimal:8',
             'max_delivery_radius_km' => 'decimal:2',
@@ -64,5 +68,11 @@ class Tenant extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(TenantOrder::class, 'tenant_id');
+    }
+
+    /** @return HasMany<TenantOperatingHour, $this> */
+    public function operatingHours(): HasMany
+    {
+        return $this->hasMany(TenantOperatingHour::class, 'tenant_id');
     }
 }

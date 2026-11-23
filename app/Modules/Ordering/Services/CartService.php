@@ -39,8 +39,9 @@ final class CartService
             ->where('id', $productId)
             ->where('is_available', true)
             ->where('stock_qty', '>', 0)
-            ->whereHas('tenant', fn ($query) => $query->where('status', 'active'))
+            ->whereHas('tenant', static fn ($query) => $query->where('status', 'active'))
             ->first();
+
         if ($product === null) {
             throw CartException::menuNotOrderable();
         }
@@ -74,9 +75,21 @@ final class CartService
     /**
      * @param  array<int, int>  $optionIds
      */
-    private function lineKey(int $productId, array $optionIds, ?string $note = null): string
+    private function lineKey(int $productId, array $optionIds = [], ?string $note = null): string
     {
-        return substr(hash('sha256', $productId.'|'.implode(',', $optionIds).'|'.($note ?? '')), 0, 24);
+        $normalizedOptions = array_values(array_filter(
+            $optionIds,
+            static fn (int $id): bool => $id > 0
+        ));
+        sort($normalizedOptions);
+
+        $normalizedNote = $note !== null && trim($note) !== '' ? trim($note) : '';
+
+        return substr(
+            hash('sha256', $productId.'|'.implode(',', $normalizedOptions).'|'.$normalizedNote),
+            0,
+            24
+        );
     }
 
     /**
@@ -88,10 +101,12 @@ final class CartService
         if (! is_string($raw) || $raw === '') {
             return [];
         }
+
         $decoded = json_decode($raw, true);
         if (! is_array($decoded) || ! isset($decoded['items']) || ! is_array($decoded['items'])) {
             return [];
         }
+
         $items = [];
         foreach ($decoded['items'] as $item) {
             if (is_array($item) && isset($item['line_key'])) {
@@ -112,6 +127,7 @@ final class CartService
 
             return;
         }
+
         $payload = json_encode(['items' => array_values($items)], JSON_THROW_ON_ERROR);
         Redis::setex($this->key($session), $this->ttlSeconds($session), $payload);
     }
@@ -138,6 +154,7 @@ final class CartService
         if ($note === null) {
             return null;
         }
+
         $clean = trim((string) preg_replace('/\s+/u', ' ', strip_tags($note)));
         if (mb_strlen($clean) > self::NOTE_MAX_LENGTH) {
             throw CartException::noteTooLong(self::NOTE_MAX_LENGTH);
@@ -168,12 +185,13 @@ final class CartService
                 ->withoutGlobalScope('tenant')
                 ->with('tenant')
                 ->where('id', $item['product_id'])
-                ->whereHas('tenant', fn ($query) => $query->where('status', 'active'))
+                ->whereHas('tenant', static fn ($query) => $query->where('status', 'active'))
                 ->first();
-            $qty = (int) $item['quantity'];
 
+            $qty = (int) $item['quantity'];
             $available = $product !== null && $product->is_available && $product->stock_qty >= $qty;
             $issues = [];
+
             if ($product === null || ! $product->is_available) {
                 $issues[] = 'product_unavailable';
             } elseif ($product->stock_qty < $qty) {
@@ -192,13 +210,16 @@ final class CartService
 
             $totalQty += $qty;
 
-            $tenantName = $item['tenant_name'] ?? ($product !== null && $product->tenant !== null ? $product->tenant->name : 'Tenant');
+            $tenantId = $product !== null ? (int) $product->tenant_id : (int) ($item['tenant_id'] ?? 0);
+            $tenantName = $product !== null && $product->tenant !== null
+                ? (string) $product->tenant->name
+                : (string) ($item['tenant_name'] ?? 'Tenant');
 
             $lines[] = new CartLine(
                 lineKey: (string) $item['line_key'],
                 menuId: (int) $item['product_id'],
-                tenantId: (int) ($item['tenant_id'] ?? 0),
-                tenantName: (string) $tenantName,
+                tenantId: $tenantId,
+                tenantName: $tenantName,
                 name: (string) $item['name_at_add'],
                 quantity: $qty,
                 unitPrice: $unitPrice,

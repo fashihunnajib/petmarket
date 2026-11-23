@@ -12,17 +12,36 @@ class ResolveCustomerSession
     public function current(Request $request): ?CustomerSession
     {
         $token = $request->cookie('session_token') ?? $request->bearerToken();
-        if (! is_string($token) || $token === '') {
-            return null;
+        if (is_string($token) && $token !== '') {
+            $session = $this->fromToken($token);
+            if ($session !== null) {
+                return $session;
+            }
         }
 
-        return $this->fromToken($token);
+        $sessionId = $request->hasSession()
+            ? $request->session()->get('customer_session_id')
+            : session('customer_session_id');
+
+        if ($sessionId) {
+            return CustomerSession::query()
+                ->whereKey($sessionId)
+                ->where('status', 'active')
+                ->where('expires_at', '>', now())
+                ->first();
+        }
+
+        return null;
     }
 
     public function resolveOrCreate(Request $request): CustomerSession
     {
         $existing = $this->current($request);
         if ($existing !== null) {
+            if ($request->hasSession()) {
+                $request->session()->put('customer_session_id', $existing->id);
+            }
+
             return $existing;
         }
 
@@ -36,6 +55,12 @@ class ResolveCustomerSession
 
         Cookie::queue('session_token', $plainToken, 240);
         $request->cookies->set('session_token', $plainToken);
+
+        if ($request->hasSession()) {
+            $request->session()->put('customer_session_id', $session->id);
+        } else {
+            session(['customer_session_id' => $session->id]);
+        }
 
         return $session;
     }
